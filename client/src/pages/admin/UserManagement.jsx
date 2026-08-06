@@ -10,62 +10,50 @@ const UserManagement = () => {
   const [roleFilter, setRoleFilter] = useState('')
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    role: 'Employee',
-    department: '',
-    phone: '',
-    isActive: true
-  })
 
-  const fetchUsers = async (showLoader = true) => {
-    if (showLoader) setLoading(true)
+  const blankForm = { name: '', email: '', password: '', role: 'Employee', department: '', phone: '', isActive: true }
+  const [formData, setFormData] = useState(blankForm)
+
+  const loadUsers = async (withLoader = true) => {
+    if (withLoader) setLoading(true)
     try {
       const url = roleFilter ? `/users?role=${roleFilter}` : '/users'
-      const response = await axiosInstance.get(url)
-      setUsers(response.data.data || [])
-    } catch (err) {
+      const res = await axiosInstance.get(url)
+      setUsers(res.data.data || [])
+    } catch (e) {
       alert('Error fetching users')
     } finally {
-      if (showLoader) setLoading(false)
+      if (withLoader) setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchUsers(true)
+    loadUsers(true)
   }, [roleFilter])
 
-  const handleInputChange = (e) => {
-    const value = e.target.type === 'checkbox' ? e.target.checked : e.target.value
-    setFormData({ ...formData, [e.target.name]: value })
+  const handleChange = (e) => {
+    const val = e.target.type === 'checkbox' ? e.target.checked : e.target.value
+    setFormData({ ...formData, [e.target.name]: val })
   }
 
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
       if (editingId) {
-        const payload = { ...formData }
-        await axiosInstance.put(`/users/${editingId}`, payload)
+        await axiosInstance.put(`/users/${editingId}`, formData)
       } else {
         await axiosInstance.post('/users', formData)
       }
       setShowForm(false)
       setEditingId(null)
-      resetForm()
-      fetchUsers(false)
-    } catch (err) {
-      alert(err.response?.data?.message || 'An error occurred')
+      setFormData(blankForm)
+      loadUsers(false)
+    } catch (e) {
+      alert(e.response?.data?.message || 'Something went wrong')
     }
   }
 
-  const resetForm = () => {
-    setFormData({ name: '', email: '', password: '', role: 'Employee', department: '', phone: '', isActive: true })
-  }
-
-  const handleEdit = (user) => {
+  const openEditForm = (user) => {
     setEditingId(user._id)
     setFormData({
       name: user.name,
@@ -79,25 +67,23 @@ const UserManagement = () => {
     setShowForm(true)
   }
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to deactivate this user?')) {
-      try {
-        await axiosInstance.delete(`/users/${id}`)
-        fetchUsers(false)
-      } catch (err) {
-        alert('Error deactivating user')
-      }
+  const deactivateUser = async (id) => {
+    if (!window.confirm('Deactivate this user?')) return
+    try {
+      await axiosInstance.delete(`/users/${id}`)
+      loadUsers(false)
+    } catch (e) {
+      alert('Error deactivating')
     }
   }
 
-  const handleReactivate = async (id) => {
-    if (window.confirm('Are you sure you want to reactivate this user?')) {
-      try {
-        await axiosInstance.put(`/users/${id}`, { isActive: true })
-        fetchUsers(false)
-      } catch (err) {
-        alert('Error reactivating user')
-      }
+  const reactivateUser = async (id) => {
+    if (!window.confirm('Reactivate this user?')) return
+    try {
+      await axiosInstance.put(`/users/${id}`, { isActive: true })
+      loadUsers(false)
+    } catch (e) {
+      alert('Error reactivating')
     }
   }
 
@@ -117,7 +103,7 @@ const UserManagement = () => {
           <button className="primary" onClick={() => {
             setShowForm(!showForm)
             setEditingId(null)
-            resetForm()
+            setFormData(blankForm)
           }}>
             {showForm ? 'Cancel' : '+ Add User'}
           </button>
@@ -133,19 +119,19 @@ const UserManagement = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
               <div>
                 <label>Name</label>
-                <input name="name" value={formData.name} onChange={handleInputChange} placeholder="Full Name" required />
+                <input name="name" value={formData.name} onChange={handleChange} placeholder="Full Name" required />
               </div>
               <div>
                 <label>Email Address</label>
-                <input name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="Email" required />
+                <input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Email" required />
               </div>
               <div>
                 <label>Password <span style={{ color: 'var(--accent-danger)' }}>*</span></label>
-                <input name="password" type="password" value={formData.password} onChange={handleInputChange} placeholder="Enter Password" required pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{13,}" title="Must be at least 13 characters, with 1 uppercase, 1 lowercase, 1 number, and 1 special character" />
+                <input name="password" type="password" value={formData.password} onChange={handleChange} placeholder="Enter Password" required pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{13,}" title="Must be at least 13 characters, with 1 uppercase, 1 lowercase, 1 number, and 1 special character" />
               </div>
               <div>
                 <label>Role <span style={{ color: 'var(--accent-danger)' }}>*</span></label>
-                <select name="role" value={formData.role} onChange={handleInputChange} required>
+                <select name="role" value={formData.role} onChange={handleChange} required>
                   <option value="Administrator">Administrator</option>
                   <option value="Receptionist">Receptionist</option>
                   <option value="Employee">Employee</option>
@@ -153,7 +139,7 @@ const UserManagement = () => {
               </div>
               <div>
                 <label>Department <span style={{ color: 'var(--accent-danger)' }}>*</span></label>
-                <input name="department" value={formData.department} onChange={handleInputChange} placeholder="Department" required />
+                <input name="department" value={formData.department} onChange={handleChange} placeholder="Department" required />
               </div>
               <div>
                 <label>Phone <span style={{ color: 'var(--accent-danger)' }}>*</span></label>
@@ -168,7 +154,7 @@ const UserManagement = () => {
               {editingId && (
                 <div style={{ display: 'flex', alignItems: 'center' }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', margin: 0 }}>
-                    <input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleInputChange} style={{ width: 'auto' }} />
+                    <input type="checkbox" name="isActive" checked={formData.isActive} onChange={handleChange} style={{ width: 'auto' }} />
                     Is Active
                   </label>
                 </div>
@@ -214,11 +200,11 @@ const UserManagement = () => {
                 </td>
                 <td style={{ color: 'var(--text-secondary)' }}>{new Date(user.createdAt).toLocaleDateString()}</td>
                 <td style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button onClick={() => handleEdit(user)} className="secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Edit</button>
+                  <button onClick={() => openEditForm(user)} className="secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Edit</button>
                   {user.isActive ? (
-                    <button onClick={() => handleDelete(user._id)} className="danger" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Deactivate</button>
+                    <button onClick={() => deactivateUser(user._id)} className="danger" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Deactivate</button>
                   ) : (
-                    <button onClick={() => handleReactivate(user._id)} className="success" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Reactivate</button>
+                    <button onClick={() => reactivateUser(user._id)} className="success" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Reactivate</button>
                   )}
                 </td>
               </tr>

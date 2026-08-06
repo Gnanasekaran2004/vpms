@@ -1,25 +1,19 @@
 import express from 'express';
-import {
-  getAllUsers,
-  createUser,
-  updateUser,
-  deleteUser,
-  getEmployeeList
-} from '../controllers/userController.js';
+import { getAllUsers, createUser, updateUser, deleteUser, getEmployeeList } from '../controllers/userController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorizeRoles } from '../middleware/roleMiddleware.js';
 
-const userRouter = express.Router();
+const r = express.Router();
 
-userRouter.use(protect);
+r.use(protect);
 
-userRouter.get('/employees/list', authorizeRoles('Administrator', 'Receptionist'), getEmployeeList);
+r.get('/employees/list', authorizeRoles('Administrator', 'Receptionist'), getEmployeeList);
 
-userRouter.use(authorizeRoles('Administrator'));
+r.use(authorizeRoles('Administrator'));
 
-userRouter.get('/', getAllUsers);
-userRouter.post('/', createUser);
-userRouter.put('/:id', updateUser);
-userRouter.delete('/:id', deleteUser);
+r.get('/', getAllUsers);
+r.post('/', createUser);
+r.put('/:id', updateUser);
+r.delete('/:id', deleteUser);
 
-export default userRouter;
+export default r;

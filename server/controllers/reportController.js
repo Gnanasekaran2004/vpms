@@ -3,50 +3,70 @@ import { ok, err } from '../utils/apiResponse.js';
 
 export const getVisitorReport = async (req, res) => {
   try {
-    const { range, startDate, endDate } = req.query;
-    let dateRange = {};
+    const reportRangeInput = req.query.range;
+    const reportStartDateInput = req.query.startDate;
+    const reportEndDateInput = req.query.endDate;
+    
+    let constructedDateRange = {};
 
-    const now = new Date();
+    const theTimeRightNow = new Date();
 
-    if (range === 'today') {
-      const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-      const dayEnd = new Date(dayStart);
-      dayEnd.setHours(23, 59, 59, 999);
-      dateRange = { visitDate: { $gte: dayStart, $lte: dayEnd } };
-    } else if (range === 'week') {
-      const startOfWeekDay = now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1);
-      const weekStart = new Date(now.setDate(startOfWeekDay));
-      weekStart.setHours(0, 0, 0, 0);
-      const weekEnd = new Date(weekStart);
-      weekEnd.setDate(weekStart.getDate() + 6);
-      weekEnd.setHours(23, 59, 59, 999);
-      dateRange = { visitDate: { $gte: weekStart, $lte: weekEnd } };
-    } else if (range === 'custom' && startDate && endDate) {
-      const s = new Date(startDate);
-      const e = new Date(endDate);
-      e.setHours(23, 59, 59, 999);
-      dateRange = { visitDate: { $gte: s, $lte: e } };
+    if (reportRangeInput === 'today') {
+      const startOfTodayDay = new Date(theTimeRightNow.getFullYear(), theTimeRightNow.getMonth(), theTimeRightNow.getDate());
+      const endOfTodayDay = new Date(startOfTodayDay);
+      endOfTodayDay.setHours(23, 59, 59, 999);
+      constructedDateRange = { visitDate: { $gte: startOfTodayDay, $lte: endOfTodayDay } };
+    } else if (reportRangeInput === 'week') {
+      let calculateDayDiff = theTimeRightNow.getDay();
+      if (calculateDayDiff === 0) {
+        calculateDayDiff = -6;
+      } else {
+        calculateDayDiff = 1;
+      }
+      const startOfWeekDayNumber = theTimeRightNow.getDate() - theTimeRightNow.getDay() + calculateDayDiff;
+      const startOfWeekDate = new Date(theTimeRightNow.setDate(startOfWeekDayNumber));
+      startOfWeekDate.setHours(0, 0, 0, 0);
+      const endOfWeekDate = new Date(startOfWeekDate);
+      endOfWeekDate.setDate(startOfWeekDate.getDate() + 6);
+      endOfWeekDate.setHours(23, 59, 59, 999);
+      constructedDateRange = { visitDate: { $gte: startOfWeekDate, $lte: endOfWeekDate } };
+    } else if (reportRangeInput === 'custom') {
+      if (reportStartDateInput && reportEndDateInput) {
+        const customStartDateParsed = new Date(reportStartDateInput);
+        const customEndDateParsed = new Date(reportEndDateInput);
+        customEndDateParsed.setHours(23, 59, 59, 999);
+        constructedDateRange = { visitDate: { $gte: customStartDateParsed, $lte: customEndDateParsed } };
+      }
     }
 
-    const records = await VisitorPass.find(dateRange)
+    const allTheFoundRecords = await VisitorPass.find(constructedDateRange)
       .populate('employeeToVisit', 'name department')
       .populate('createdBy', 'name')
       .sort({ visitDate: -1 });
 
-    const byStatus = status => records.filter(r => r.status === status).length;
-
-    const stats = {
-      totalRegistrations: records.length,
-      approved: byStatus('Approved'),
-      rejected: byStatus('Rejected'),
-      checkedIn: byStatus('CheckedIn'),
-      checkedOut: byStatus('CheckedOut'),
-      cancelled: byStatus('Cancelled'),
-      pending: byStatus('Pending')
+    const getCountForStatus = (statusString) => {
+      let runningCount = 0;
+      for (let i = 0; i < allTheFoundRecords.length; i++) {
+        if (allTheFoundRecords[i].status === statusString) {
+          runningCount++;
+        }
+      }
+      return runningCount;
     };
 
-    return ok(res, { stats, visitors: records });
-  } catch (e) {
+    const finalReportStats = {
+      totalRegistrations: allTheFoundRecords.length,
+      approved: getCountForStatus('Approved'),
+      rejected: getCountForStatus('Rejected'),
+      checkedIn: getCountForStatus('CheckedIn'),
+      checkedOut: getCountForStatus('CheckedOut'),
+      cancelled: getCountForStatus('Cancelled'),
+      pending: getCountForStatus('Pending')
+    };
+
+    const objectToSendBack = { stats: finalReportStats, visitors: allTheFoundRecords };
+    return ok(res, objectToSendBack);
+  } catch (caughtError) {
     return err(res, 'Server Error', 500);
   }
 };

@@ -3,27 +3,31 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
 const Navbar = () => {
-  const { user, logout } = useAuth()
-  const navigate = useNavigate()
+  let authContextData = useAuth()
+  let currentUserObj = authContextData.user
+  let myLogoutFunc = authContextData.logout
+  let routerNavigateFunc = useNavigate()
 
-  const handleLogout = () => {
-    logout()
-    navigate('/login')
+  let onLogoutBtnClicked = () => {
+    myLogoutFunc()
+    routerNavigateFunc('/login')
+  }
+
+  let navStyleObj = { 
+    display: 'flex', 
+    justifyContent: 'space-between', 
+    alignItems: 'center',
+    padding: '1rem 2rem', 
+    background: 'rgba(15, 23, 42, 0.8)',
+    backdropFilter: 'blur(12px)',
+    borderBottom: '1px solid var(--glass-border)',
+    position: 'sticky',
+    top: 0,
+    zIndex: 100
   }
 
   return (
-    <nav style={{ 
-      display: 'flex', 
-      justifyContent: 'space-between', 
-      alignItems: 'center',
-      padding: '1rem 2rem', 
-      background: 'rgba(15, 23, 42, 0.8)',
-      backdropFilter: 'blur(12px)',
-      borderBottom: '1px solid var(--glass-border)',
-      position: 'sticky',
-      top: 0,
-      zIndex: 100
-    }}>
+    <nav style={navStyleObj}>
       <div>
         <strong style={{ 
           fontSize: '1.5rem', 
@@ -35,7 +39,7 @@ const Navbar = () => {
       </div>
       <div style={{ display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
         <span style={{ color: 'var(--text-secondary)', fontSize: '0.95rem' }}>
-          Welcome, <strong style={{ color: 'var(--text-primary)' }}>{user?.name}</strong> 
+          Welcome, <strong style={{ color: 'var(--text-primary)' }}>{currentUserObj ? currentUserObj.name : ''}</strong> 
           <span style={{ 
             fontSize: '0.75rem', 
             background: 'rgba(255,255,255,0.1)', 
@@ -44,10 +48,10 @@ const Navbar = () => {
             marginLeft: '8px',
             color: 'var(--accent-primary)'
           }}>
-            {user?.role}
+            {currentUserObj ? currentUserObj.role : ''}
           </span>
         </span>
-        <button onClick={handleLogout} className="secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
+        <button onClick={onLogoutBtnClicked} className="secondary" style={{ padding: '0.5rem 1rem', fontSize: '0.85rem' }}>
           Sign Out
         </button>
       </div>

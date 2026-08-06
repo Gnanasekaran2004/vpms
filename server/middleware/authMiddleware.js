@@ -4,18 +4,24 @@ import { err } from '../utils/apiResponse.js';
 
 export const protect = async (req, res, next) => {
   try {
-    const header = req.headers.authorization;
-    if (!header?.startsWith('Bearer')) return err(res, 'Not authorized', 401);
+    let authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith('Bearer')) {
+      return err(res, 'Not authorized', 401);
+    }
 
-    const token = header.split(' ')[1];
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // get token
+    let myToken = authHeader.split(' ')[1];
+    let decodedToken = jwt.verify(myToken, process.env.JWT_SECRET);
 
-    const user = await User.findById(decoded.userId).select('-password');
-    if (!user || user.isActive === false) return err(res, 'Not authorized', 401);
+    let myUser = await User.findById(decodedToken.userId).select('-password');
+    if (!myUser || myUser.isActive === false) {
+      return err(res, 'Not authorized', 401);
+    }
 
-    req.user = user;
+    req.user = myUser;
     next();
-  } catch {
+  } catch (e) {
+    console.log('auth err', e);
     return err(res, 'Not authorized', 401);
   }
 };

@@ -1,30 +1,20 @@
 import express from 'express';
-import {
-  registerVisitor,
-  getAllVisitors,
-  getVisitorById,
-  approveVisitor,
-  rejectVisitor,
-  checkInVisitor,
-  checkOutVisitor,
-  cancelVisit,
-  getVisitorLogs
-} from '../controllers/visitorController.js';
+import { registerVisitor, getAllVisitors, getVisitorById, approveVisitor, rejectVisitor, checkInVisitor, checkOutVisitor, cancelVisit, getVisitorLogs } from '../controllers/visitorController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorizeRoles } from '../middleware/roleMiddleware.js';
 
-const visitorRouter = express.Router();
+const visitRtr = express.Router();
 
-visitorRouter.use(protect);
+visitRtr.use(protect);
 
-visitorRouter.post('/', authorizeRoles('Receptionist'), registerVisitor);
-visitorRouter.get('/', getAllVisitors);
-visitorRouter.get('/:id', getVisitorById);
-visitorRouter.patch('/:id/approve', authorizeRoles('Employee'), approveVisitor);
-visitorRouter.patch('/:id/reject', authorizeRoles('Employee'), rejectVisitor);
-visitorRouter.post('/:id/check-in', authorizeRoles('Receptionist'), checkInVisitor);
-visitorRouter.post('/:id/check-out', authorizeRoles('Receptionist'), checkOutVisitor);
-visitorRouter.patch('/:id/cancel', authorizeRoles('Receptionist', 'Administrator'), cancelVisit);
-visitorRouter.get('/:id/logs', getVisitorLogs);
+visitRtr.post('/', authorizeRoles('Receptionist'), registerVisitor);
+visitRtr.get('/', getAllVisitors);
+visitRtr.get('/:id', getVisitorById);
+visitRtr.patch('/:id/approve', authorizeRoles('Employee'), approveVisitor);
+visitRtr.patch('/:id/reject', authorizeRoles('Employee'), rejectVisitor);
+visitRtr.post('/:id/check-in', authorizeRoles('Receptionist'), checkInVisitor);
+visitRtr.post('/:id/check-out', authorizeRoles('Receptionist'), checkOutVisitor);
+visitRtr.patch('/:id/cancel', authorizeRoles('Receptionist', 'Administrator'), cancelVisit);
+visitRtr.get('/:id/logs', getVisitorLogs);
 
-export default visitorRouter;
+export default visitRtr;

@@ -9,17 +9,19 @@ const ReceptionistDashboard = () => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchStats = async () => {
+    // load data for dash
+    const loadDashboardStats = async () => {
       try {
-        const response = await axiosInstance.get('/dashboard/stats')
-        setStats(response.data.data)
+        const statsData = await axiosInstance.get('/dashboard/stats')
+        setStats(statsData.data.data)
       } catch (err) {
+        console.error(err)
         alert('Failed to fetch stats')
       } finally {
         setLoading(false)
       }
     }
-    fetchStats()
+    loadDashboardStats()
   }, [])
 
   if (loading) return <LoadingSpinner />

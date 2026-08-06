@@ -3,8 +3,8 @@ import { getVisitorReport } from '../controllers/reportController.js';
 import { protect } from '../middleware/authMiddleware.js';
 import { authorizeRoles } from '../middleware/roleMiddleware.js';
 
-const reportRouter = express.Router();
+const repRoute = express.Router();
 
-reportRouter.get('/visitors', protect, authorizeRoles('Administrator'), getVisitorReport);
+repRoute.get('/visitors', protect, authorizeRoles('Administrator'), getVisitorReport);
 
-export default reportRouter;
+export default repRoute;

@@ -14,6 +14,7 @@ dotenv.config();
 
 const app = express();
 
+// cors stuff
 app.use(cors({
   origin: process.env.CLIENT_ORIGIN || 'http://localhost:5173',
   credentials: true
@@ -21,6 +22,7 @@ app.use(cors({
 
 app.use(express.json());
 
+// routes
 app.use('/api/auth', authRouter);
 app.use('/api/users', userRouter);
 app.use('/api/visitors', visitorRouter);
@@ -32,6 +34,7 @@ app.use('*', (req, res) => {
   return err(res, 'Route not found', 404);
 });
 
+// err handler
 app.use((error, req, res, next) => {
   return err(res, error.message, 500);
 });

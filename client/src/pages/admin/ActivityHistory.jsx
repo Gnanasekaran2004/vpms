@@ -7,17 +7,19 @@ const ActivityHistory = () => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchLogs = async () => {
+    // fetch all the logs
+    const loadLogs = async () => {
       try {
-        const response = await axiosInstance.get('/activity-logs')
-        setLogs(response.data.data || [])
-      } catch (err) {
+        const historyData = await axiosInstance.get('/activity-logs')
+        setLogs(historyData.data.data || [])
+      } catch (e) {
+        console.error("error fetching logs", e)
         alert('Error fetching activity logs')
       } finally {
         setLoading(false)
       }
     }
-    fetchLogs()
+    loadLogs()
   }, [])
 
   if (loading) return <LoadingSpinner />
@@ -41,27 +43,16 @@ const ActivityHistory = () => {
           <tbody>
             {logs.map(log => (
               <tr key={log._id}>
-                <td style={{ color: 'var(--text-secondary)' }}>
-                  {new Date(log.timestamp).toLocaleString()}
-                </td>
+                <td style={{ color: 'var(--text-secondary)' }}>{new Date(log.timestamp).toLocaleString()}</td>
                 <td>
-                  <span style={{ 
-                    color: 'var(--accent-primary)', 
-                    fontWeight: '500',
-                    background: 'rgba(59, 130, 246, 0.1)',
-                    padding: '0.25rem 0.75rem',
-                    borderRadius: '999px',
-                    fontSize: '0.85rem'
-                  }}>
+                  <span style={{ color: 'var(--accent-primary)', fontWeight: '500', background: 'rgba(59, 130, 246, 0.1)', padding: '0.25rem 0.75rem', borderRadius: '999px', fontSize: '0.85rem' }}>
                     {log.actionPerformed}
                   </span>
                 </td>
                 <td><strong>{log.visitorId?.visitorName || 'Unknown'}</strong></td>
                 <td>
                   {log.performedBy ? (
-                    <span>
-                      {log.performedBy.name} <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>({log.performedBy.role})</span>
-                    </span>
+                    <span>{log.performedBy.name} <span style={{ color: 'var(--text-secondary)', fontSize: '0.85rem' }}>({log.performedBy.role})</span></span>
                   ) : (
                     <span style={{ color: 'var(--text-secondary)' }}>System</span>
                   )}

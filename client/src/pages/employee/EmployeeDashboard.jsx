@@ -9,17 +9,19 @@ const EmployeeDashboard = () => {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    const fetchStats = async () => {
+    // get employee stats from api
+    const loadMyStats = async () => {
       try {
-        const response = await axiosInstance.get('/dashboard/stats')
-        setStats(response.data.data)
-      } catch (err) {
+        const myStatsRes = await axiosInstance.get('/dashboard/stats')
+        setStats(myStatsRes.data.data)
+      } catch (e) {
+        console.log(e)
         alert('Failed to fetch stats')
       } finally {
         setLoading(false)
       }
     }
-    fetchStats()
+    loadMyStats()
   }, [])
 
   if (loading) return <LoadingSpinner />

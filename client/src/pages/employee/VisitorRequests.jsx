@@ -10,36 +10,46 @@ const VisitorRequests = () => {
   const [actionId, setActionId] = useState(null)
   const [remarks, setRemarks] = useState('')
 
-  const fetchVisitors = async (showLoader = true) => {
-    if (showLoader) setLoading(true)
+  const getVisitorsData = async (shouldShowLoader = true) => {
+    if (shouldShowLoader) {
+      setLoading(true)
+    }
     try {
-      const url = statusFilter ? `/visitors?status=${statusFilter}` : '/visitors'
-      const response = await axiosInstance.get(url)
-      setVisitors(response.data.data || [])
-    } catch (err) {
+      let endpoint = '/visitors'
+      if (statusFilter) {
+        endpoint = `/visitors?status=${statusFilter}`
+      }
+      const visitorsRes = await axiosInstance.get(endpoint)
+      setVisitors(visitorsRes.data.data || [])
+    } catch (e) {
+      console.log('error getting visitors', e)
       alert('Error fetching visitor requests')
     } finally {
-      if (showLoader) setLoading(false)
+      if (shouldShowLoader) {
+        setLoading(false)
+      }
     }
   }
 
+  // refresh when filter changes
   useEffect(() => {
-    fetchVisitors(true)
+    getVisitorsData(true)
   }, [statusFilter])
 
-  const handleAction = async (id, action) => {
-    if (action === 'reject' && !remarks.trim()) {
+  const doAction = async (id, actionType) => {
+    if (actionType === 'reject' && remarks.trim() === '') {
       alert('Remarks are required for rejection')
       return
     }
 
     try {
-      await axiosInstance.patch(`/visitors/${id}/${action}`, { remarks })
+      await axiosInstance.patch(`/visitors/${id}/${actionType}`, { remarks: remarks })
       setActionId(null)
       setRemarks('')
-      fetchVisitors(false)
-    } catch (err) {
-      alert(err.response?.data?.message || `Error performing ${action}`)
+      getVisitorsData(false)
+    } catch (e) {
+      console.log(e)
+      alert(e.response?.data?.message || `Error performing ${actionType}`)
     }
   }
 
@@ -94,17 +104,11 @@ const VisitorRequests = () => {
                     )}
                     {actionId === v._id && (
                       <div className="glass-card" style={{ padding: '1rem', marginTop: '0.5rem', minWidth: '250px', position: 'absolute', zIndex: 10, right: '2rem' }}>
-                        <input 
-                          type="text" 
-                          placeholder="Add remarks (required for reject)..." 
-                          value={remarks} 
-                          onChange={(e) => setRemarks(e.target.value)} 
-                          style={{ display: 'block', marginBottom: '1rem', width: '100%' }}
-                        />
+                        <input type="text" placeholder="Add remarks (required for reject)..." value={remarks} onChange={(e) => setRemarks(e.target.value)} style={{ display: 'block', marginBottom: '1rem', width: '100%' }} />
                         <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
                           <button onClick={() => { setActionId(null); setRemarks(''); }} className="secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Cancel</button>
-                          <button onClick={() => handleAction(v._id, 'reject')} className="danger" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Reject</button>
-                          <button onClick={() => handleAction(v._id, 'approve')} className="success" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Approve</button>
+                          <button onClick={() => doAction(v._id, 'reject')} className="danger" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Reject</button>
+                          <button onClick={() => doAction(v._id, 'approve')} className="success" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Approve</button>
                         </div>
                       </div>
                     )}

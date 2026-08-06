@@ -1,22 +1,39 @@
 import React, { createContext, useReducer, useEffect } from 'react'
 
-const authReducer = (state, action) => {
-  switch (action.type) {
-    case 'INIT':
-      return { ...state, user: action.payload.user, token: action.payload.token, isAuthenticated: !!action.payload.token, isLoading: false }
-    case 'LOGIN':
-      return { ...state, user: action.payload.user, token: action.payload.token, isAuthenticated: true, isLoading: false }
-    case 'LOGOUT':
-      return { ...state, user: null, token: null, isAuthenticated: false, isLoading: false }
-    default:
-      return state
+let myAuthReducerFunc = (currentState, dispatchedAction) => {
+  if (dispatchedAction.type === 'INIT') {
+    return { 
+      ...currentState, 
+      user: dispatchedAction.payload.user, 
+      token: dispatchedAction.payload.token, 
+      isAuthenticated: dispatchedAction.payload.token ? true : false, 
+      isLoading: false 
+    }
+  } else if (dispatchedAction.type === 'LOGIN') {
+    return { 
+      ...currentState, 
+      user: dispatchedAction.payload.user, 
+      token: dispatchedAction.payload.token, 
+      isAuthenticated: true, 
+      isLoading: false 
+    }
+  } else if (dispatchedAction.type === 'LOGOUT') {
+    return { 
+      ...currentState, 
+      user: null, 
+      token: null, 
+      isAuthenticated: false, 
+      isLoading: false 
+    }
+  } else {
+    return currentState
   }
 }
 
 export const AuthContext = createContext()
 
 export const AuthProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(authReducer, {
+  let [authStateObj, dispatchMyAction] = useReducer(myAuthReducerFunc, {
     user: null,
     token: null,
     isAuthenticated: false,
@@ -24,35 +41,35 @@ export const AuthProvider = ({ children }) => {
   })
 
   useEffect(() => {
-    const token = localStorage.getItem('vpms_token')
-    const stored = localStorage.getItem('vpms_user')
+    let tokenStr = localStorage.getItem('vpms_token')
+    let userStr = localStorage.getItem('vpms_user')
 
-    if (token && stored) {
+    if (tokenStr !== null && userStr !== null) {
       try {
-        const user = JSON.parse(stored)
-        dispatch({ type: 'INIT', payload: { user, token } })
-      } catch {
-        dispatch({ type: 'INIT', payload: { user: null, token: null } })
+        let parsedUserObj = JSON.parse(userStr)
+        dispatchMyAction({ type: 'INIT', payload: { user: parsedUserObj, token: tokenStr } })
+      } catch (parseErr) {
+        dispatchMyAction({ type: 'INIT', payload: { user: null, token: null } })
       }
     } else {
-      dispatch({ type: 'INIT', payload: { user: null, token: null } })
+      dispatchMyAction({ type: 'INIT', payload: { user: null, token: null } })
     }
   }, [])
 
-  const login = (profile, token) => {
-    localStorage.setItem('vpms_token', token)
-    localStorage.setItem('vpms_user', JSON.stringify(profile))
-    dispatch({ type: 'LOGIN', payload: { user: profile, token } })
+  let doLoginFunc = (userProfileObj, userTokenStr) => {
+    localStorage.setItem('vpms_token', userTokenStr)
+    localStorage.setItem('vpms_user', JSON.stringify(userProfileObj))
+    dispatchMyAction({ type: 'LOGIN', payload: { user: userProfileObj, token: userTokenStr } })
   }
 
-  const logout = () => {
+  let doLogoutFunc = () => {
     localStorage.removeItem('vpms_token')
     localStorage.removeItem('vpms_user')
-    dispatch({ type: 'LOGOUT' })
+    dispatchMyAction({ type: 'LOGOUT' })
   }
 
   return (
-    <AuthContext.Provider value={{ ...state, login, logout }}>
+    <AuthContext.Provider value={{ ...authStateObj, login: doLoginFunc, logout: doLogoutFunc }}>
       {children}
     </AuthContext.Provider>
   )

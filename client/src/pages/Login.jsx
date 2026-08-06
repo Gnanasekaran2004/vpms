@@ -4,33 +4,43 @@ import { useAuth } from '../hooks/useAuth'
 import axiosInstance from '../api/axiosInstance'
 
 const Login = () => {
-  const [email, setEmail] = useState('')
-  const [password, setPassword] = useState('')
-  const [error, setError] = useState(null)
-  const [loading, setLoading] = useState(false)
-  const { login } = useAuth()
-  const navigate = useNavigate()
+  let [emailInputVal, setEmailInputVal] = useState('')
+  let [passwordInputVal, setPasswordInputVal] = useState('')
+  let [loginErrorMsg, setLoginErrorMsg] = useState(null)
+  let [isWaitLoading, setIsWaitLoading] = useState(false)
+  
+  let authHookStuff = useAuth()
+  let doLoginCall = authHookStuff.login
+  let myNavFunc = useNavigate()
 
-  const handleSubmit = async (e) => {
-    e.preventDefault()
-    setError(null)
-    setLoading(true)
+  let onFormSubmitBtnClick = async (eventObj) => {
+    eventObj.preventDefault()
+    setLoginErrorMsg(null)
+    setIsWaitLoading(true)
 
     try {
-      const response = await axiosInstance.post('/auth/login', { email, password })
-      const { user, token } = response.data.data
+      let apiPostResult = await axiosInstance.post('/auth/login', { email: emailInputVal, password: passwordInputVal })
+      let loggedUserObj = apiPostResult.data.data.user
+      let tokenStr = apiPostResult.data.data.token
       
-      login(user, token)
+      doLoginCall(loggedUserObj, tokenStr)
       
-      const role = user.role
-      if (role === 'Administrator') navigate('/admin/dashboard')
-      else if (role === 'Receptionist') navigate('/receptionist/dashboard')
-      else if (role === 'Employee') navigate('/employee/dashboard')
-    } catch (err) {
-      setError(err.response?.data?.message || 'Login failed')
-    } finally {
-      setLoading(false)
-    }
+      let userRoleStr = loggedUserObj.role
+      if (userRoleStr === 'Administrator') {
+        myNavFunc('/admin/dashboard')
+      } else if (userRoleStr === 'Receptionist') {
+        myNavFunc('/receptionist/dashboard')
+      } else if (userRoleStr === 'Employee') {
+        myNavFunc('/employee/dashboard')
+      }
+    } catch (caughtErrObj) {
+      if (caughtErrObj.response && caughtErrObj.response.data && caughtErrObj.response.data.message) {
+        setLoginErrorMsg(caughtErrObj.response.data.message)
+      } else {
+        setLoginErrorMsg('Login failed')
+      }
+    } 
+    setIsWaitLoading(false)
   }
 
   return (
@@ -41,37 +51,23 @@ const Login = () => {
           <p style={{ color: 'var(--text-secondary)', marginTop: '0.5rem' }}>Welcome back! Please enter your details.</p>
         </div>
         
-        {error && (
+        {loginErrorMsg !== null && (
           <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', padding: '0.75rem', borderRadius: '8px', marginBottom: '1.5rem', textAlign: 'center' }}>
-            {error}
+            {loginErrorMsg}
           </div>
         )}
         
-        <form onSubmit={handleSubmit}>
+        <form onSubmit={onFormSubmitBtnClick}>
           <div style={{ marginBottom: '1.5rem' }}>
             <label>Email Address</label>
-            <input
-              type="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              required
-              autoComplete="username"
-              placeholder="Enter your email"
-            />
+            <input type="email" value={emailInputVal} onChange={(e) => setEmailInputVal(e.target.value)} required autoComplete="username" placeholder="Enter your email" />
           </div>
           <div style={{ marginBottom: '2rem' }}>
             <label>Password</label>
-            <input
-              type="password"
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              required
-              autoComplete="current-password"
-              placeholder="Enter your password"
-            />
+            <input type="password" value={passwordInputVal} onChange={(e) => setPasswordInputVal(e.target.value)} required autoComplete="current-password" placeholder="Enter your password" />
           </div>
-          <button type="submit" disabled={loading} style={{ width: '100%' }}>
-            {loading ? 'Signing in...' : 'Sign In'}
+          <button type="submit" disabled={isWaitLoading === true} style={{ width: '100%' }}>
+            {isWaitLoading === true ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
 

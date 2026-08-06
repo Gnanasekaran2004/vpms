@@ -7,6 +7,7 @@ const VisitorHistory = () => {
   const [visitors, setVisitors] = useState([])
   const [loading, setLoading] = useState(true)
   const [expandedId, setExpandedId] = useState(null)
+  const [employees, setEmployees] = useState([])
 
   const [filters, setFilters] = useState({
     search: '',
@@ -14,40 +15,33 @@ const VisitorHistory = () => {
     date: '',
     employeeId: ''
   })
-  const [employees, setEmployees] = useState([])
 
   useEffect(() => {
-    const fetchEmployees = async () => {
-      try {
-        const res = await axiosInstance.get('/users/employees')
-        setEmployees(res.data.data || [])
-      } catch(err) {
-        console.error('Error fetching employees')
-      }
-    }
-    fetchEmployees()
+    axiosInstance.get('/users/employees').then(res => {
+      setEmployees(res.data.data || [])
+    }).catch(() => {})
   }, [])
 
-  const fetchVisitors = async (showLoader = true) => {
-    if (showLoader) setLoading(true)
+  const loadVisitors = async (withLoader = true) => {
+    if (withLoader) setLoading(true)
     try {
-      const queryParams = new URLSearchParams()
-      if (filters.search) queryParams.append('search', filters.search)
-      if (filters.status) queryParams.append('status', filters.status)
-      if (filters.date) queryParams.append('date', filters.date)
-      if (filters.employeeId) queryParams.append('employeeId', filters.employeeId)
+      const params = new URLSearchParams()
+      if (filters.search) params.append('search', filters.search)
+      if (filters.status) params.append('status', filters.status)
+      if (filters.date) params.append('date', filters.date)
+      if (filters.employeeId) params.append('employeeId', filters.employeeId)
 
-      const response = await axiosInstance.get(`/visitors?${queryParams.toString()}`)
-      setVisitors(response.data.data || [])
-    } catch (err) {
+      const res = await axiosInstance.get(`/visitors?${params.toString()}`)
+      setVisitors(res.data.data || [])
+    } catch (e) {
       alert('Error fetching visitors')
     } finally {
-      if (showLoader) setLoading(false)
+      if (withLoader) setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchVisitors(true)
+    loadVisitors(true)
   }, [filters])
 
   const handleFilterChange = (e) => {
@@ -55,9 +49,7 @@ const VisitorHistory = () => {
   }
 
   const handleAction = async (id, action) => {
-    let confirmMsg = ''
-    if (action === 'cancel') confirmMsg = 'Are you sure you want to cancel this visit?'
-    if (confirmMsg && !window.confirm(confirmMsg)) return
+    if (action === 'cancel' && !window.confirm('Cancel this visit?')) return
 
     try {
       if (action === 'cancel') {
@@ -65,9 +57,9 @@ const VisitorHistory = () => {
       } else {
         await axiosInstance.post(`/visitors/${id}/${action}`)
       }
-      fetchVisitors(false)
-    } catch (err) {
-      alert(err.response?.data?.message || `Error performing ${action}`)
+      loadVisitors(false)
+    } catch (e) {
+      alert(e.response?.data?.message || `Error: ${action}`)
     }
   }
 

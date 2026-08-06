@@ -1,71 +1,48 @@
 import mongoose from 'mongoose';
-import bcryptjs from 'bcryptjs';
+import bcrypt from 'bcryptjs';
 import { isValidPhoneNumber } from 'libphonenumber-js';
 
 const userSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    trim: true
-  },
-  email: {
-    type: String,
-    required: true,
-    unique: true,
-    lowercase: true,
-    trim: true,
-    match: [/^\S+@\S+\.\S+$/, 'Please use a valid email address.']
-  },
+  name: { type: String, required: true, trim: true },
+  email: { type: String, required: true, unique: true, lowercase: true, trim: true, match: [/^\S+@\S+\.\S+$/, 'Please use a valid email address.'] },
   password: {
-    type: String,
-    required: true,
+    type: String, required: true,
     validate: {
-      validator: function(v) {
+      validator: function(val) {
         if (!this.isModified('password')) return true;
-        return /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{13,}$/.test(v);
+        // check pass
+        let regex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{13,}$/;
+        return regex.test(val);
       },
       message: 'Password must be at least 13 characters long and contain at least one uppercase letter, one lowercase letter, one number, and one special character.'
     }
   },
-  role: {
-    type: String,
-    required: true,
-    enum: ['Administrator', 'Receptionist', 'Employee']
-  },
-  department: {
-    type: String,
-    required: true,
-    trim: true
-  },
+  role: { type: String, required: true, enum: ['Administrator', 'Receptionist', 'Employee'] },
+  department: { type: String, required: true, trim: true },
   phone: {
-    type: String,
-    required: true,
-    trim: true,
+    type: String, required: true, trim: true,
     validate: {
-      validator: function(v) {
-        return isValidPhoneNumber(v);
+      validator: function(val) {
+        return isValidPhoneNumber(val);
       },
-      message: props => `${props.value} is not a valid phone number.`
+      message: myProps => myProps.value + ' is not a valid phone number.'
     }
   },
-  isActive: {
-    type: Boolean,
-    default: true
-  }
-}, {
-  timestamps: true
-});
+  isActive: { type: Boolean, default: true }
+}, { timestamps: true });
 
+// hash pass before save
 userSchema.pre('save', async function(next) {
   if (this.isModified('password')) {
-    const saltRounds = 10;
-    this.password = await bcryptjs.hash(this.password, saltRounds);
+    let salt = 10;
+    this.password = await bcrypt.hash(this.password, salt);
   }
   next();
 });
 
-userSchema.methods.comparePassword = async function(candidatePassword) {
-  return bcryptjs.compare(candidatePassword, this.password);
+userSchema.methods.comparePassword = async function(passToCheck) {
+  let isMatch = await bcrypt.compare(passToCheck, this.password);
+  return isMatch;
 };
 
 const User = mongoose.model('User', userSchema);

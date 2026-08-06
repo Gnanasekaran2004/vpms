@@ -4,36 +4,45 @@ import { ok, err } from '../utils/apiResponse.js';
 
 export const login = async (req, res) => {
   try {
-    const { email, password } = req.body;
+    const userEmail = req.body.email;
+    const userPassword = req.body.password;
 
-    if (!email || !password) return err(res, 'Email and password are required', 400);
+    if (!userEmail || !userPassword) {
+      return err(res, 'Email and password are required', 400);
+    }
 
-    const user = await User.findOne({ email }).select('+password');
+    const foundUser = await User.findOne({ email: userEmail }).select('+password');
 
-    if (!user || !user.isActive) return err(res, 'Invalid credentials', 401);
+    if (!foundUser || foundUser.isActive === false) {
+      return err(res, 'Invalid credentials', 401);
+    }
 
-    const pwOk = await user.comparePassword(password);
+    const isPasswordGood = await foundUser.comparePassword(userPassword);
 
-    if (!pwOk) return err(res, 'Invalid credentials', 401);
+    if (isPasswordGood === false) {
+      return err(res, 'Invalid credentials', 401);
+    }
 
-    const token = jwt.sign(
-      { userId: user._id, role: user.role, name: user.name },
+    const generatedToken = jwt.sign(
+      { userId: foundUser._id, role: foundUser.role, name: foundUser.name },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
 
-    return ok(res, {
-      token,
+    const dataToSend = {
+      token: generatedToken,
       user: {
-        _id: user._id,
-        name: user.name,
-        email: user.email,
-        role: user.role,
-        department: user.department,
-        phone: user.phone,
+        _id: foundUser._id,
+        name: foundUser.name,
+        email: foundUser.email,
+        role: foundUser.role,
+        department: foundUser.department,
+        phone: foundUser.phone,
       },
-    });
-  } catch (e) {
+    };
+
+    return ok(res, dataToSend);
+  } catch (caughtError) {
     return err(res, 'Server Error', 500);
   }
 };

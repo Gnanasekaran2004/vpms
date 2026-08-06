@@ -9,17 +9,19 @@ const AdminDashboard = () => {
   const [error, setError] = useState(null)
 
   useEffect(() => {
-    const fetchStats = async () => {
+    // get dashboard stats
+    const getStats = async () => {
       try {
-        const response = await axiosInstance.get('/dashboard/stats')
-        setStats(response.data.data)
-      } catch (err) {
-        setError(err.response?.data?.message || 'Failed to fetch stats')
+        const statsRes = await axiosInstance.get('/dashboard/stats')
+        setStats(statsRes.data.data)
+      } catch (e) {
+        console.error(e) // log error just in case
+        setError(e.response?.data?.message || 'Failed to fetch stats')
       } finally {
         setLoading(false)
       }
     }
-    fetchStats()
+    getStats()
   }, [])
 
   if (loading) return <LoadingSpinner />

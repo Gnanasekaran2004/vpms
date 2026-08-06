@@ -2,21 +2,41 @@ import React from 'react'
 import { Navigate, Outlet } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
-const dashboardByRole = {
+let roleDashboardsObj = {
   Administrator: '/admin/dashboard',
   Receptionist: '/receptionist/dashboard',
   Employee: '/employee/dashboard'
 }
 
 const ProtectedRoute = ({ allowedRoles }) => {
-  const { isAuthenticated, isLoading, user } = useAuth()
+  let authStuff = useAuth()
+  let isItAuthenticated = authStuff.isAuthenticated
+  let isItLoading = authStuff.isLoading
+  let loggedInUser = authStuff.user
 
-  if (isLoading) return <div>Loading...</div>
-  if (!isAuthenticated) return <Navigate to="/login" replace />
+  if (isItLoading === true) {
+    return <div>Loading...</div>
+  }
+  
+  if (isItAuthenticated === false) {
+    return <Navigate to="/login" replace={true} />
+  }
 
-  if (allowedRoles && !allowedRoles.includes(user.role)) {
-    const dest = dashboardByRole[user.role] || '/login'
-    return <Navigate to={dest} replace />
+  if (allowedRoles !== undefined && allowedRoles !== null) {
+    let hasRoleMatch = false
+    for (let i = 0; i < allowedRoles.length; i++) {
+      if (allowedRoles[i] === loggedInUser.role) {
+        hasRoleMatch = true
+      }
+    }
+    
+    if (hasRoleMatch === false) {
+      let whereToGoNext = roleDashboardsObj[loggedInUser.role]
+      if (!whereToGoNext) {
+        whereToGoNext = '/login'
+      }
+      return <Navigate to={whereToGoNext} replace={true} />
+    }
   }
 
   return <Outlet />

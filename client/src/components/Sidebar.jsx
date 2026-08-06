@@ -2,7 +2,7 @@ import React from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
-const navMap = {
+let roleLinksMappingVar = {
   Administrator: [
     { path: '/admin/dashboard', label: 'Dashboard' },
     { path: '/admin/employees', label: 'Employees' },
@@ -22,8 +22,15 @@ const navMap = {
 }
 
 const Sidebar = () => {
-  const { user } = useAuth()
-  const links = navMap[user?.role] || []
+  let authDataFromHook = useAuth()
+  let loggedUserVar = authDataFromHook.user
+  
+  let menuLinksArr = []
+  if (loggedUserVar && loggedUserVar.role) {
+    if (roleLinksMappingVar[loggedUserVar.role]) {
+      menuLinksArr = roleLinksMappingVar[loggedUserVar.role]
+    }
+  }
 
   return (
     <aside className="sidebar">
@@ -31,23 +38,26 @@ const Sidebar = () => {
         <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.1em', color: 'var(--text-secondary)' }}>Menu</span>
       </div>
       <ul style={{ listStyleType: 'none', padding: 0 }}>
-        {links.map((link) => (
-          <li key={link.path} style={{ marginBottom: '0.5rem' }}>
+        {menuLinksArr.map((singleLinkObj) => (
+          <li key={singleLinkObj.path} style={{ marginBottom: '0.5rem' }}>
             <NavLink
-              to={link.path}
-              style={({ isActive }) => ({
-                display: 'block',
-                padding: '0.75rem 1rem',
-                textDecoration: 'none',
-                color: isActive ? '#ffffff' : 'var(--text-secondary)',
-                fontWeight: isActive ? '500' : '400',
-                backgroundColor: isActive ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
-                borderLeft: isActive ? '3px solid var(--accent-primary)' : '3px solid transparent',
-                borderRadius: '0 8px 8px 0',
-                transition: 'all 0.2s ease'
-              })}
+              to={singleLinkObj.path}
+              style={(navLinkPropsObj) => {
+                let isCurrentLinkActive = navLinkPropsObj.isActive
+                return {
+                  display: 'block',
+                  padding: '0.75rem 1rem',
+                  textDecoration: 'none',
+                  color: isCurrentLinkActive ? '#ffffff' : 'var(--text-secondary)',
+                  fontWeight: isCurrentLinkActive ? '500' : '400',
+                  backgroundColor: isCurrentLinkActive ? 'rgba(59, 130, 246, 0.2)' : 'transparent',
+                  borderLeft: isCurrentLinkActive ? '3px solid var(--accent-primary)' : '3px solid transparent',
+                  borderRadius: '0 8px 8px 0',
+                  transition: 'all 0.2s ease'
+                }
+              }}
             >
-              {link.label}
+              {singleLinkObj.label}
             </NavLink>
           </li>
         ))}

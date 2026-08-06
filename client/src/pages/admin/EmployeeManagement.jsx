@@ -9,32 +9,27 @@ const EmployeeManagement = () => {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState(null)
-  
-  const [formData, setFormData] = useState({
-    name: '',
-    email: '',
-    password: '',
-    department: '',
-    phone: ''
-  })
 
-  const fetchEmployees = async (showLoader = true) => {
-    if (showLoader) setLoading(true)
+  const emptyForm = { name: '', email: '', password: '', department: '', phone: '' }
+  const [formData, setFormData] = useState(emptyForm)
+
+  const loadEmployees = async (withLoader = true) => {
+    if (withLoader) setLoading(true)
     try {
-      const response = await axiosInstance.get('/users?role=Employee')
-      setEmployees(response.data.data || [])
-    } catch (err) {
+      const res = await axiosInstance.get('/users?role=Employee')
+      setEmployees(res.data.data || [])
+    } catch (e) {
       alert('Error fetching employees')
     } finally {
-      if (showLoader) setLoading(false)
+      if (withLoader) setLoading(false)
     }
   }
 
   useEffect(() => {
-    fetchEmployees(true)
+    loadEmployees()
   }, [])
 
-  const handleInputChange = (e) => {
+  const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value })
   }
 
@@ -42,51 +37,48 @@ const EmployeeManagement = () => {
     e.preventDefault()
     try {
       if (editingId) {
-        const payload = { ...formData }
-        await axiosInstance.put(`/users/${editingId}`, payload)
+        await axiosInstance.put(`/users/${editingId}`, { ...formData, role: 'Employee' })
       } else {
         await axiosInstance.post('/users', { ...formData, role: 'Employee' })
       }
       setShowForm(false)
       setEditingId(null)
-      setFormData({ name: '', email: '', password: '', department: '', phone: '' })
-      fetchEmployees(false)
-    } catch (err) {
-      alert(err.response?.data?.message || 'An error occurred')
+      setFormData(emptyForm)
+      loadEmployees(false)
+    } catch (e) {
+      alert(e.response?.data?.message || 'Something went wrong')
     }
   }
 
-  const handleEdit = (employee) => {
-    setEditingId(employee._id)
+  const openEditForm = (emp) => {
+    setEditingId(emp._id)
     setFormData({
-      name: employee.name,
-      email: employee.email,
+      name: emp.name,
+      email: emp.email,
       password: '',
-      department: employee.department || '',
-      phone: employee.phone || ''
+      department: emp.department || '',
+      phone: emp.phone || ''
     })
     setShowForm(true)
   }
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to deactivate this employee?')) {
-      try {
-        await axiosInstance.delete(`/users/${id}`)
-        fetchEmployees(false)
-      } catch (err) {
-        alert('Error deactivating employee')
-      }
+  const deactivateEmp = async (id) => {
+    if (!window.confirm('Deactivate this employee?')) return
+    try {
+      await axiosInstance.delete(`/users/${id}`)
+      loadEmployees(false)
+    } catch (e) {
+      alert('Error deactivating employee')
     }
   }
 
-  const handleReactivate = async (id) => {
-    if (window.confirm('Are you sure you want to reactivate this employee?')) {
-      try {
-        await axiosInstance.put(`/users/${id}`, { isActive: true })
-        fetchEmployees(false)
-      } catch (err) {
-        alert('Error reactivating employee')
-      }
+  const reactivateEmp = async (id) => {
+    if (!window.confirm('Reactivate this employee?')) return
+    try {
+      await axiosInstance.put(`/users/${id}`, { isActive: true })
+      loadEmployees(false)
+    } catch (e) {
+      alert('Error reactivating')
     }
   }
 
@@ -99,7 +91,7 @@ const EmployeeManagement = () => {
         <button className="primary" onClick={() => {
           setShowForm(!showForm)
           setEditingId(null)
-          setFormData({ name: '', email: '', password: '', department: '', phone: '' })
+          setFormData(emptyForm)
         }}>
           {showForm ? 'Cancel' : '+ Add Employee'}
         </button>
@@ -114,19 +106,19 @@ const EmployeeManagement = () => {
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1.5rem' }}>
               <div>
                 <label>Name</label>
-                <input name="name" value={formData.name} onChange={handleInputChange} placeholder="Full Name" required />
+                <input name="name" value={formData.name} onChange={handleChange} placeholder="Full Name" required />
               </div>
               <div>
                 <label>Email Address</label>
-                <input name="email" type="email" value={formData.email} onChange={handleInputChange} placeholder="Email" required />
+                <input name="email" type="email" value={formData.email} onChange={handleChange} placeholder="Email" required />
               </div>
               <div>
                 <label>Password <span style={{ color: 'var(--accent-danger)' }}>*</span></label>
-                <input name="password" type="password" value={formData.password} onChange={handleInputChange} placeholder="Enter Password" required pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{13,}" title="Must be at least 13 characters, with 1 uppercase, 1 lowercase, 1 number, and 1 special character" />
+                <input name="password" type="password" value={formData.password} onChange={handleChange} placeholder="Enter Password" required pattern="(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&]).{13,}" title="Must be at least 13 characters, with 1 uppercase, 1 lowercase, 1 number, and 1 special character" />
               </div>
               <div>
                 <label>Department <span style={{ color: 'var(--accent-danger)' }}>*</span></label>
-                <input name="department" value={formData.department} onChange={handleInputChange} placeholder="Department Name" required />
+                <input name="department" value={formData.department} onChange={handleChange} placeholder="Department Name" required />
               </div>
               <div>
                 <label>Phone Number <span style={{ color: 'var(--accent-danger)' }}>*</span></label>
@@ -173,11 +165,11 @@ const EmployeeManagement = () => {
                   </span>
                 </td>
                 <td style={{ display: 'flex', gap: '0.5rem' }}>
-                  <button onClick={() => handleEdit(emp)} className="secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Edit</button>
+                  <button onClick={() => openEditForm(emp)} className="secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Edit</button>
                   {emp.isActive ? (
-                    <button onClick={() => handleDelete(emp._id)} className="danger" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Deactivate</button>
+                    <button onClick={() => deactivateEmp(emp._id)} className="danger" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Deactivate</button>
                   ) : (
-                    <button onClick={() => handleReactivate(emp._id)} className="success" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Reactivate</button>
+                    <button onClick={() => reactivateEmp(emp._id)} className="success" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Reactivate</button>
                   )}
                 </td>
               </tr>

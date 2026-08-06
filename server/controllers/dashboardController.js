@@ -4,77 +4,121 @@ import { ok, err } from '../utils/apiResponse.js';
 
 export const getDashboardStats = async (req, res) => {
   try {
-    const c = facet => facet[0]?.count || 0;
-
-    const now = new Date();
-    const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const dayEnd = new Date(dayStart);
-    dayEnd.setHours(23, 59, 59, 999);
-
-    const { role } = req.user;
-    let stats = {};
-
-    if (role === 'Administrator') {
-      const [agg] = await VisitorPass.aggregate([
+    const theCurrentDateNow = new Date();
+    const theStartOfToday = new Date(theCurrentDateNow.getFullYear(), theCurrentDateNow.getMonth(), theCurrentDateNow.getDate());
+    const theEndOfToday = new Date(theStartOfToday);
+    theEndOfToday.setHours(23, 59, 59, 999);
+    
+    const theUserRole = req.user.role;
+    let finalDashboardStatsToReturn = {};
+    
+    if (theUserRole === 'Administrator') {
+      const aggregationResultArray = await VisitorPass.aggregate([
         {
           $facet: {
-            pendingRequests: [{ $match: { status: 'Pending' } }, { $count: 'count' }],
-            todaysVisitors: [{ $match: { visitDate: { $gte: dayStart, $lte: dayEnd } } }, { $count: 'count' }],
-            visitorsInsideNow: [{ $match: { status: 'CheckedIn' } }, { $count: 'count' }],
-            scheduledVisitors: [{ $match: { status: 'Approved', visitDate: { $gte: dayStart, $lte: dayEnd } } }, { $count: 'count' }],
-            totalVisitors: [{ $count: 'count' }]
+            pendingRequestsCount: [{ $match: { status: 'Pending' } }, { $count: 'count' }],
+            todaysVisitorsCount: [{ $match: { visitDate: { $gte: theStartOfToday, $lte: theEndOfToday } } }, { $count: 'count' }],
+            visitorsInsideNowCount: [{ $match: { status: 'CheckedIn' } }, { $count: 'count' }],
+            scheduledVisitorsCount: [{ $match: { status: 'Approved', visitDate: { $gte: theStartOfToday, $lte: theEndOfToday } } }, { $count: 'count' }],
+            totalVisitorsCount: [{ $count: 'count' }]
           }
         }
       ]);
-      const totalEmployees = await User.countDocuments({ role: 'Employee', isActive: true });
-      stats = {
-        pendingRequests: c(agg.pendingRequests),
-        todaysVisitors: c(agg.todaysVisitors),
-        visitorsInsideNow: c(agg.visitorsInsideNow),
-        totalEmployees,
-        scheduledVisitors: c(agg.scheduledVisitors),
-        totalVisitors: c(agg.totalVisitors)
+      const theAggregatedData = aggregationResultArray[0];
+
+      const totalActiveEmployeesNumber = await User.countDocuments({ role: 'Employee', isActive: true });
+      
+      let pendingRequestsVal = 0;
+      if (theAggregatedData.pendingRequestsCount[0]) pendingRequestsVal = theAggregatedData.pendingRequestsCount[0].count;
+
+      let todaysVisitorsVal = 0;
+      if (theAggregatedData.todaysVisitorsCount[0]) todaysVisitorsVal = theAggregatedData.todaysVisitorsCount[0].count;
+
+      let visitorsInsideNowVal = 0;
+      if (theAggregatedData.visitorsInsideNowCount[0]) visitorsInsideNowVal = theAggregatedData.visitorsInsideNowCount[0].count;
+
+      let scheduledVisitorsVal = 0;
+      if (theAggregatedData.scheduledVisitorsCount[0]) scheduledVisitorsVal = theAggregatedData.scheduledVisitorsCount[0].count;
+
+      let totalVisitorsVal = 0;
+      if (theAggregatedData.totalVisitorsCount[0]) totalVisitorsVal = theAggregatedData.totalVisitorsCount[0].count;
+
+      finalDashboardStatsToReturn = {
+        pendingRequests: pendingRequestsVal,
+        todaysVisitors: todaysVisitorsVal,
+        visitorsInsideNow: visitorsInsideNowVal,
+        totalEmployees: totalActiveEmployeesNumber,
+        scheduledVisitors: scheduledVisitorsVal,
+        totalVisitors: totalVisitorsVal
       };
-    } else if (role === 'Receptionist') {
-      const [agg] = await VisitorPass.aggregate([
+    } else if (theUserRole === 'Receptionist') {
+      const aggregationResultArray = await VisitorPass.aggregate([
         {
           $facet: {
-            pendingRequests: [{ $match: { status: 'Pending' } }, { $count: 'count' }],
-            todaysVisitors: [{ $match: { visitDate: { $gte: dayStart, $lte: dayEnd } } }, { $count: 'count' }],
-            visitorsInsideNow: [{ $match: { status: 'CheckedIn' } }, { $count: 'count' }],
-            approvedToday: [{ $match: { status: 'Approved', visitDate: { $gte: dayStart, $lte: dayEnd } } }, { $count: 'count' }]
+            pendingRequestsCount: [{ $match: { status: 'Pending' } }, { $count: 'count' }],
+            todaysVisitorsCount: [{ $match: { visitDate: { $gte: theStartOfToday, $lte: theEndOfToday } } }, { $count: 'count' }],
+            visitorsInsideNowCount: [{ $match: { status: 'CheckedIn' } }, { $count: 'count' }],
+            approvedTodayCount: [{ $match: { status: 'Approved', visitDate: { $gte: theStartOfToday, $lte: theEndOfToday } } }, { $count: 'count' }]
           }
         }
       ]);
-      stats = {
-        pendingRequests: c(agg.pendingRequests),
-        todaysVisitors: c(agg.todaysVisitors),
-        visitorsInsideNow: c(agg.visitorsInsideNow),
-        approvedToday: c(agg.approvedToday)
+      const theAggregatedData = aggregationResultArray[0];
+      
+      let pendingRequestsVal = 0;
+      if (theAggregatedData.pendingRequestsCount[0]) pendingRequestsVal = theAggregatedData.pendingRequestsCount[0].count;
+
+      let todaysVisitorsVal = 0;
+      if (theAggregatedData.todaysVisitorsCount[0]) todaysVisitorsVal = theAggregatedData.todaysVisitorsCount[0].count;
+
+      let visitorsInsideNowVal = 0;
+      if (theAggregatedData.visitorsInsideNowCount[0]) visitorsInsideNowVal = theAggregatedData.visitorsInsideNowCount[0].count;
+
+      let approvedTodayVal = 0;
+      if (theAggregatedData.approvedTodayCount[0]) approvedTodayVal = theAggregatedData.approvedTodayCount[0].count;
+
+      finalDashboardStatsToReturn = {
+        pendingRequests: pendingRequestsVal,
+        todaysVisitors: todaysVisitorsVal,
+        visitorsInsideNow: visitorsInsideNowVal,
+        approvedToday: approvedTodayVal
       };
-    } else if (role === 'Employee') {
-      const empId = req.user._id;
-      const [agg] = await VisitorPass.aggregate([
-        { $match: { employeeToVisit: empId } },
+    } else if (theUserRole === 'Employee') {
+      const theEmployeeFilterId = req.user._id;
+      const aggregationResultArray = await VisitorPass.aggregate([
+        { $match: { employeeToVisit: theEmployeeFilterId } },
         {
           $facet: {
-            pendingRequests: [{ $match: { status: 'Pending' } }, { $count: 'count' }],
-            approvedRequests: [{ $match: { status: 'Approved' } }, { $count: 'count' }],
-            rejectedRequests: [{ $match: { status: 'Rejected' } }, { $count: 'count' }],
-            todaysVisitors: [{ $match: { visitDate: { $gte: dayStart, $lte: dayEnd } } }, { $count: 'count' }]
+            pendingRequestsCount: [{ $match: { status: 'Pending' } }, { $count: 'count' }],
+            approvedRequestsCount: [{ $match: { status: 'Approved' } }, { $count: 'count' }],
+            rejectedRequestsCount: [{ $match: { status: 'Rejected' } }, { $count: 'count' }],
+            todaysVisitorsCount: [{ $match: { visitDate: { $gte: theStartOfToday, $lte: theEndOfToday } } }, { $count: 'count' }]
           }
         }
       ]);
-      stats = {
-        pendingRequests: c(agg.pendingRequests),
-        approvedRequests: c(agg.approvedRequests),
-        rejectedRequests: c(agg.rejectedRequests),
-        todaysVisitors: c(agg.todaysVisitors)
+      const theAggregatedData = aggregationResultArray[0];
+      
+      let pendingRequestsVal = 0;
+      if (theAggregatedData.pendingRequestsCount[0]) pendingRequestsVal = theAggregatedData.pendingRequestsCount[0].count;
+
+      let approvedRequestsVal = 0;
+      if (theAggregatedData.approvedRequestsCount[0]) approvedRequestsVal = theAggregatedData.approvedRequestsCount[0].count;
+
+      let rejectedRequestsVal = 0;
+      if (theAggregatedData.rejectedRequestsCount[0]) rejectedRequestsVal = theAggregatedData.rejectedRequestsCount[0].count;
+
+      let todaysVisitorsVal = 0;
+      if (theAggregatedData.todaysVisitorsCount[0]) todaysVisitorsVal = theAggregatedData.todaysVisitorsCount[0].count;
+
+      finalDashboardStatsToReturn = {
+        pendingRequests: pendingRequestsVal,
+        approvedRequests: approvedRequestsVal,
+        rejectedRequests: rejectedRequestsVal,
+        todaysVisitors: todaysVisitorsVal
       };
     }
-
-    return ok(res, stats);
-  } catch (e) {
+    
+    return ok(res, finalDashboardStatsToReturn);
+  } catch (caughtError) {
     return err(res, 'Server Error', 500);
   }
 };
