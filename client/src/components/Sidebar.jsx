@@ -2,37 +2,28 @@ import React from 'react'
 import { NavLink } from 'react-router-dom'
 import { useAuth } from '../hooks/useAuth'
 
+const navMap = {
+  Administrator: [
+    { path: '/admin/dashboard', label: 'Dashboard' },
+    { path: '/admin/employees', label: 'Employees' },
+    { path: '/admin/users', label: 'Users' },
+    { path: '/admin/reports', label: 'Reports' },
+    { path: '/admin/activity', label: 'Activity' }
+  ],
+  Receptionist: [
+    { path: '/receptionist/dashboard', label: 'Dashboard' },
+    { path: '/receptionist/register', label: 'Register Visitor' },
+    { path: '/receptionist/history', label: 'Visitor History' }
+  ],
+  Employee: [
+    { path: '/employee/dashboard', label: 'Dashboard' },
+    { path: '/employee/requests', label: 'Visitor Requests' }
+  ]
+}
+
 const Sidebar = () => {
   const { user } = useAuth()
-  const role = user?.role
-
-  const getLinks = () => {
-    if (role === 'Administrator') {
-      return [
-        { path: '/admin/dashboard', label: 'Dashboard' },
-        { path: '/admin/employees', label: 'Employees' },
-        { path: '/admin/users', label: 'Users' },
-        { path: '/admin/reports', label: 'Reports' },
-        { path: '/admin/activity', label: 'Activity' }
-      ]
-    }
-    if (role === 'Receptionist') {
-      return [
-        { path: '/receptionist/dashboard', label: 'Dashboard' },
-        { path: '/receptionist/register', label: 'Register Visitor' },
-        { path: '/receptionist/history', label: 'Visitor History' }
-      ]
-    }
-    if (role === 'Employee') {
-      return [
-        { path: '/employee/dashboard', label: 'Dashboard' },
-        { path: '/employee/requests', label: 'Visitor Requests' }
-      ]
-    }
-    return []
-  }
-
-  const links = getLinks()
+  const links = navMap[user?.role] || []
 
   return (
     <aside className="sidebar">

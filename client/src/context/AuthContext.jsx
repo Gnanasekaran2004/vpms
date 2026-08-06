@@ -1,38 +1,13 @@
 import React, { createContext, useReducer, useEffect } from 'react'
 
-const initialState = {
-  user: null,
-  token: null,
-  isAuthenticated: false,
-  isLoading: true
-}
-
 const authReducer = (state, action) => {
   switch (action.type) {
-    case 'INITIALIZE':
-      return {
-        ...state,
-        user: action.payload.user,
-        token: action.payload.token,
-        isAuthenticated: !!action.payload.token,
-        isLoading: false
-      }
-    case 'LOGIN_SUCCESS':
-      return {
-        ...state,
-        user: action.payload.user,
-        token: action.payload.token,
-        isAuthenticated: true,
-        isLoading: false
-      }
+    case 'INIT':
+      return { ...state, user: action.payload.user, token: action.payload.token, isAuthenticated: !!action.payload.token, isLoading: false }
+    case 'LOGIN':
+      return { ...state, user: action.payload.user, token: action.payload.token, isAuthenticated: true, isLoading: false }
     case 'LOGOUT':
-      return {
-        ...state,
-        user: null,
-        token: null,
-        isAuthenticated: false,
-        isLoading: false
-      }
+      return { ...state, user: null, token: null, isAuthenticated: false, isLoading: false }
     default:
       return state
   }
@@ -41,34 +16,33 @@ const authReducer = (state, action) => {
 export const AuthContext = createContext()
 
 export const AuthProvider = ({ children }) => {
-  const [state, dispatch] = useReducer(authReducer, initialState)
+  const [state, dispatch] = useReducer(authReducer, {
+    user: null,
+    token: null,
+    isAuthenticated: false,
+    isLoading: true
+  })
 
   useEffect(() => {
     const token = localStorage.getItem('vpms_token')
-    const userString = localStorage.getItem('vpms_user')
-    
-    if (token && userString) {
+    const stored = localStorage.getItem('vpms_user')
+
+    if (token && stored) {
       try {
-        const user = JSON.parse(userString)
-        dispatch({
-          type: 'INITIALIZE',
-          payload: { user, token }
-        })
-      } catch (error) {
-        dispatch({ type: 'INITIALIZE', payload: { user: null, token: null } })
+        const user = JSON.parse(stored)
+        dispatch({ type: 'INIT', payload: { user, token } })
+      } catch {
+        dispatch({ type: 'INIT', payload: { user: null, token: null } })
       }
     } else {
-      dispatch({ type: 'INITIALIZE', payload: { user: null, token: null } })
+      dispatch({ type: 'INIT', payload: { user: null, token: null } })
     }
   }, [])
 
-  const login = (userData, token) => {
+  const login = (profile, token) => {
     localStorage.setItem('vpms_token', token)
-    localStorage.setItem('vpms_user', JSON.stringify(userData))
-    dispatch({
-      type: 'LOGIN_SUCCESS',
-      payload: { user: userData, token }
-    })
+    localStorage.setItem('vpms_user', JSON.stringify(profile))
+    dispatch({ type: 'LOGIN', payload: { user: profile, token } })
   }
 
   const logout = () => {

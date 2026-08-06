@@ -5,20 +5,18 @@ const axiosInstance = axios.create({
 })
 
 axiosInstance.interceptors.request.use(
-  (config) => {
+  (req) => {
     const token = localStorage.getItem('vpms_token')
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`
-    }
-    return config
+    if (token) req.headers.Authorization = `Bearer ${token}`
+    return req
   },
   (error) => Promise.reject(error)
 )
 
 axiosInstance.interceptors.response.use(
-  (response) => response,
+  (res) => res,
   (error) => {
-    if (error.response && error.response.status === 401) {
+    if (error.response?.status === 401) {
       localStorage.removeItem('vpms_token')
       localStorage.removeItem('vpms_user')
       window.location.href = '/login'

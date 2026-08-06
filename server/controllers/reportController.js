@@ -1,59 +1,52 @@
 import VisitorPass from '../models/VisitorPass.js';
-import { successResponse, errorResponse } from '../utils/apiResponse.js';
+import { ok, err } from '../utils/apiResponse.js';
 
 export const getVisitorReport = async (req, res) => {
   try {
     const { range, startDate, endDate } = req.query;
-    let dateFilterQuery = {};
-    
-    const currentDate = new Date();
-    
+    let dateRange = {};
+
+    const now = new Date();
+
     if (range === 'today') {
-      const todayStart = new Date(currentDate.getFullYear(), currentDate.getMonth(), currentDate.getDate());
-      const todayEnd = new Date(todayStart);
-      todayEnd.setHours(23, 59, 59, 999);
-      
-      dateFilterQuery = { visitDate: { $gte: todayStart, $lte: todayEnd } };
+      const dayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+      const dayEnd = new Date(dayStart);
+      dayEnd.setHours(23, 59, 59, 999);
+      dateRange = { visitDate: { $gte: dayStart, $lte: dayEnd } };
     } else if (range === 'week') {
-      const startOfWeekDay = currentDate.getDate() - currentDate.getDay() + (currentDate.getDay() === 0 ? -6 : 1);
-      const startOfWeek = new Date(currentDate.setDate(startOfWeekDay));
-      startOfWeek.setHours(0, 0, 0, 0);
-      
-      const endOfWeek = new Date(startOfWeek);
-      endOfWeek.setDate(startOfWeek.getDate() + 6);
-      endOfWeek.setHours(23, 59, 59, 999);
-      
-      dateFilterQuery = { visitDate: { $gte: startOfWeek, $lte: endOfWeek } };
+      const startOfWeekDay = now.getDate() - now.getDay() + (now.getDay() === 0 ? -6 : 1);
+      const weekStart = new Date(now.setDate(startOfWeekDay));
+      weekStart.setHours(0, 0, 0, 0);
+      const weekEnd = new Date(weekStart);
+      weekEnd.setDate(weekStart.getDate() + 6);
+      weekEnd.setHours(23, 59, 59, 999);
+      dateRange = { visitDate: { $gte: weekStart, $lte: weekEnd } };
     } else if (range === 'custom' && startDate && endDate) {
-      const parsedStartDate = new Date(startDate);
-      const parsedEndDate = new Date(endDate);
-      parsedEndDate.setHours(23, 59, 59, 999);
-      
-      dateFilterQuery = { visitDate: { $gte: parsedStartDate, $lte: parsedEndDate } };
+      const s = new Date(startDate);
+      const e = new Date(endDate);
+      e.setHours(23, 59, 59, 999);
+      dateRange = { visitDate: { $gte: s, $lte: e } };
     }
-    
-    const retrievedVisitors = await VisitorPass.find(dateFilterQuery)
+
+    const records = await VisitorPass.find(dateRange)
       .populate('employeeToVisit', 'name department')
       .populate('createdBy', 'name')
       .sort({ visitDate: -1 });
-      
-    const reportStats = {
-      totalRegistrations: retrievedVisitors.length,
-      approved: retrievedVisitors.filter(visitorPass => visitorPass.status === 'Approved').length,
-      rejected: retrievedVisitors.filter(visitorPass => visitorPass.status === 'Rejected').length,
-      checkedIn: retrievedVisitors.filter(visitorPass => visitorPass.status === 'CheckedIn').length,
-      checkedOut: retrievedVisitors.filter(visitorPass => visitorPass.status === 'CheckedOut').length,
-      cancelled: retrievedVisitors.filter(visitorPass => visitorPass.status === 'Cancelled').length,
-      pending: retrievedVisitors.filter(visitorPass => visitorPass.status === 'Pending').length
+
+    const byStatus = status => records.filter(r => r.status === status).length;
+
+    const stats = {
+      totalRegistrations: records.length,
+      approved: byStatus('Approved'),
+      rejected: byStatus('Rejected'),
+      checkedIn: byStatus('CheckedIn'),
+      checkedOut: byStatus('CheckedOut'),
+      cancelled: byStatus('Cancelled'),
+      pending: byStatus('Pending')
     };
-    
-    const responsePayload = {
-      stats: reportStats,
-      visitors: retrievedVisitors
-    };
-    
-    return successResponse(res, responsePayload);
-  } catch (error) {
-    return errorResponse(res, 'Server Error', 500);
+
+    return ok(res, { stats, visitors: records });
+  } catch (e) {
+    return err(res, 'Server Error', 500);
   }
 };
