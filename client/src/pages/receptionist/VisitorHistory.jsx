@@ -11,8 +11,22 @@ const VisitorHistory = () => {
   const [filters, setFilters] = useState({
     search: '',
     status: '',
-    date: ''
+    date: '',
+    employeeId: ''
   })
+  const [employees, setEmployees] = useState([])
+
+  useEffect(() => {
+    const fetchEmployees = async () => {
+      try {
+        const res = await axiosInstance.get('/users/employees')
+        setEmployees(res.data.data || [])
+      } catch(err) {
+        console.error('Error fetching employees')
+      }
+    }
+    fetchEmployees()
+  }, [])
 
   const fetchVisitors = async (showLoader = true) => {
     if (showLoader) setLoading(true)
@@ -21,6 +35,7 @@ const VisitorHistory = () => {
       if (filters.search) queryParams.append('search', filters.search)
       if (filters.status) queryParams.append('status', filters.status)
       if (filters.date) queryParams.append('date', filters.date)
+      if (filters.employeeId) queryParams.append('employeeId', filters.employeeId)
 
       const response = await axiosInstance.get(`/visitors?${queryParams.toString()}`)
       setVisitors(response.data.data || [])
@@ -82,6 +97,15 @@ const VisitorHistory = () => {
               <option value="CheckedIn">Checked In</option>
               <option value="CheckedOut">Checked Out</option>
               <option value="Cancelled">Cancelled</option>
+            </select>
+          </div>
+          <div>
+            <label>Employee Filter</label>
+            <select name="employeeId" value={filters.employeeId} onChange={handleFilterChange}>
+              <option value="">All Employees</option>
+              {employees.map(emp => (
+                <option key={emp._id} value={emp._id}>{emp.name}</option>
+              ))}
             </select>
           </div>
           <div>

@@ -13,45 +13,65 @@ export const getDashboardStats = async (req, res) => {
     let dashboardStats = {};
     
     if (userRole === 'Administrator') {
-      const pendingRequests = await VisitorPass.countDocuments({ status: 'Pending' });
-      const todaysVisitors = await VisitorPass.countDocuments({ visitDate: { $gte: todayStart, $lte: todayEnd } });
-      const visitorsInsideNow = await VisitorPass.countDocuments({ status: 'CheckedIn' });
+      const [aggResult] = await VisitorPass.aggregate([
+        {
+          $facet: {
+            pendingRequests: [{ $match: { status: 'Pending' } }, { $count: 'count' }],
+            todaysVisitors: [{ $match: { visitDate: { $gte: todayStart, $lte: todayEnd } } }, { $count: 'count' }],
+            visitorsInsideNow: [{ $match: { status: 'CheckedIn' } }, { $count: 'count' }],
+            scheduledVisitors: [{ $match: { status: 'Approved', visitDate: { $gte: todayStart, $lte: todayEnd } } }, { $count: 'count' }],
+            totalVisitors: [{ $count: 'count' }]
+          }
+        }
+      ]);
+
       const totalEmployees = await User.countDocuments({ role: 'Employee', isActive: true });
-      const scheduledVisitors = await VisitorPass.countDocuments({ status: 'Approved', visitDate: { $gte: todayStart, $lte: todayEnd } });
-      const totalVisitors = await VisitorPass.countDocuments({});
       
       dashboardStats = {
-        pendingRequests,
-        todaysVisitors,
-        visitorsInsideNow,
+        pendingRequests: aggResult.pendingRequests[0]?.count || 0,
+        todaysVisitors: aggResult.todaysVisitors[0]?.count || 0,
+        visitorsInsideNow: aggResult.visitorsInsideNow[0]?.count || 0,
         totalEmployees,
-        scheduledVisitors,
-        totalVisitors
+        scheduledVisitors: aggResult.scheduledVisitors[0]?.count || 0,
+        totalVisitors: aggResult.totalVisitors[0]?.count || 0
       };
     } else if (userRole === 'Receptionist') {
-      const pendingRequests = await VisitorPass.countDocuments({ status: 'Pending' });
-      const todaysVisitors = await VisitorPass.countDocuments({ visitDate: { $gte: todayStart, $lte: todayEnd } });
-      const visitorsInsideNow = await VisitorPass.countDocuments({ status: 'CheckedIn' });
-      const approvedToday = await VisitorPass.countDocuments({ status: 'Approved', visitDate: { $gte: todayStart, $lte: todayEnd } });
+      const [aggResult] = await VisitorPass.aggregate([
+        {
+          $facet: {
+            pendingRequests: [{ $match: { status: 'Pending' } }, { $count: 'count' }],
+            todaysVisitors: [{ $match: { visitDate: { $gte: todayStart, $lte: todayEnd } } }, { $count: 'count' }],
+            visitorsInsideNow: [{ $match: { status: 'CheckedIn' } }, { $count: 'count' }],
+            approvedToday: [{ $match: { status: 'Approved', visitDate: { $gte: todayStart, $lte: todayEnd } } }, { $count: 'count' }]
+          }
+        }
+      ]);
       
       dashboardStats = {
-        pendingRequests,
-        todaysVisitors,
-        visitorsInsideNow,
-        approvedToday
+        pendingRequests: aggResult.pendingRequests[0]?.count || 0,
+        todaysVisitors: aggResult.todaysVisitors[0]?.count || 0,
+        visitorsInsideNow: aggResult.visitorsInsideNow[0]?.count || 0,
+        approvedToday: aggResult.approvedToday[0]?.count || 0
       };
     } else if (userRole === 'Employee') {
       const employeeFilterId = req.user._id;
-      const pendingRequests = await VisitorPass.countDocuments({ employeeToVisit: employeeFilterId, status: 'Pending' });
-      const approvedRequests = await VisitorPass.countDocuments({ employeeToVisit: employeeFilterId, status: 'Approved' });
-      const rejectedRequests = await VisitorPass.countDocuments({ employeeToVisit: employeeFilterId, status: 'Rejected' });
-      const todaysVisitors = await VisitorPass.countDocuments({ employeeToVisit: employeeFilterId, visitDate: { $gte: todayStart, $lte: todayEnd } });
+      const [aggResult] = await VisitorPass.aggregate([
+        { $match: { employeeToVisit: employeeFilterId } },
+        {
+          $facet: {
+            pendingRequests: [{ $match: { status: 'Pending' } }, { $count: 'count' }],
+            approvedRequests: [{ $match: { status: 'Approved' } }, { $count: 'count' }],
+            rejectedRequests: [{ $match: { status: 'Rejected' } }, { $count: 'count' }],
+            todaysVisitors: [{ $match: { visitDate: { $gte: todayStart, $lte: todayEnd } } }, { $count: 'count' }]
+          }
+        }
+      ]);
       
       dashboardStats = {
-        pendingRequests,
-        approvedRequests,
-        rejectedRequests,
-        todaysVisitors
+        pendingRequests: aggResult.pendingRequests[0]?.count || 0,
+        approvedRequests: aggResult.approvedRequests[0]?.count || 0,
+        rejectedRequests: aggResult.rejectedRequests[0]?.count || 0,
+        todaysVisitors: aggResult.todaysVisitors[0]?.count || 0
       };
     }
     
