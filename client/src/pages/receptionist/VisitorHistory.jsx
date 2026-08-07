@@ -154,7 +154,7 @@ const VisitorHistory = () => {
                             <div>
                               <h4 style={{ color: 'var(--accent-primary)', marginBottom: '1rem' }}>Activity Logs</h4>
                               <ul style={{ margin: 0, paddingLeft: '1.5rem', display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                                {v.activityLogs?.map((log, i) => (
+                                {v.s?.map((log, i) => (
                                   <li key={i} style={{ fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                                     <span style={{ color: 'var(--text-primary)' }}>{log.action}</span> at {new Date(log.timestamp).toLocaleString()}
                                   </li>

@@ -4,27 +4,27 @@ import { ok, err } from '../utils/apiResponse.js';
 
 export const login = async (req, res) => {
   try {
-    const userEmail = req.body.email;
-    const userPassword = req.body.password;
+    const Email = req.body.email;
+    const Password = req.body.password;
 
-    if (!userEmail || !userPassword) {
+    if (!Email || !Password) {
       return err(res, 'Email and password are required', 400);
     }
 
-    const foundUser = await User.findOne({ email: userEmail }).select('+password');
+    const FoundUser = await User.findOne({ email: Email }).select('+password');
 
-    if (!foundUser || foundUser.isActive === false) {
+    if (!FoundUser || FoundUser.isActive === false) {
       return err(res, 'Invalid credentials', 401);
     }
 
-    const isPasswordGood = await foundUser.comparePassword(userPassword);
+    const isPasswordGood = await FoundUser.comparePassword(Password);
 
     if (isPasswordGood === false) {
       return err(res, 'Invalid credentials', 401);
     }
 
     const generatedToken = jwt.sign(
-      { userId: foundUser._id, role: foundUser.role, name: foundUser.name },
+      { userId: FoundUser._id, role: FoundUser.role, name: FoundUser.name },
       process.env.JWT_SECRET,
       { expiresIn: process.env.JWT_EXPIRES_IN }
     );
@@ -32,12 +32,12 @@ export const login = async (req, res) => {
     const dataToSend = {
       token: generatedToken,
       user: {
-        _id: foundUser._id,
-        name: foundUser.name,
-        email: foundUser.email,
-        role: foundUser.role,
-        department: foundUser.department,
-        phone: foundUser.phone,
+        _id: FoundUser._id,
+        name: FoundUser.name,
+        email: FoundUser.email,
+        role: FoundUser.role,
+        department: FoundUser.department,
+        phone: FoundUser.phone,
       },
     };
 
