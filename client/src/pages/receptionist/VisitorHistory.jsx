@@ -28,7 +28,8 @@ const VisitorHistory = () => {
       const params = new URLSearchParams()
       if (filters.search) params.append('search', filters.search)
       if (filters.status) params.append('status', filters.status)
-      if (filters.date) params.append('date', filters.date)
+      if (filters.startDate) params.append('startDate', filters.startDate)
+      if (filters.endDate) params.append('endDate', filters.endDate)
       if (filters.employeeId) params.append('employeeId', filters.employeeId)
 
       const res = await axiosInstance.get(`/visitors?${params.toString()}`)
@@ -101,8 +102,12 @@ const VisitorHistory = () => {
             </select>
           </div>
           <div>
-            <label>Date Filter</label>
-            <input type="date" name="date" value={filters.date} onChange={handleFilterChange} />
+            <label>Start Date</label>
+            <input type="date" name="startDate" value={filters.startDate || ''} onChange={handleFilterChange} />
+          </div>
+          <div>
+            <label>End Date</label>
+            <input type="date" name="endDate" value={filters.endDate || ''} onChange={handleFilterChange} />
           </div>
         </div>
       </div>

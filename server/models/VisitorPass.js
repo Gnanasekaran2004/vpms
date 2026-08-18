@@ -22,5 +22,9 @@ const visitorPassSchema = new mongoose.Schema({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
 }, { timestamps: true });
 
+visitorPassSchema.index({ employeeToVisit: 1, status: 1 });
+visitorPassSchema.index({ visitDate: -1 });
+visitorPassSchema.index({ visitorPhone: 1 });
+
 const VisitorPass = mongoose.model('VisitorPass', visitorPassSchema);
 export default VisitorPass;

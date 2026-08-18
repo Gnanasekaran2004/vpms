@@ -44,6 +44,7 @@ userSchema.methods.comparePassword = async function(passToCheck) {
   let isMatch = await bcrypt.compare(passToCheck, this.password);
   return isMatch;
 };
+userSchema.index({ role: 1, isActive: 1 });
 
 const User = mongoose.model('User', userSchema);
 export default User;

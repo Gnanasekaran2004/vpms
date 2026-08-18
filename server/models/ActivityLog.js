@@ -7,6 +7,6 @@ const activitylog_schema = new mongoose.Schema({
   timestamp: { type: Date, default: Date.now },
   notes: { type: String }
 });
-
+activitylog_schema.index({ visitorId: 1, timestamp: 1 });
 const ActivityLog = mongoose.model('ActivityLog', activitylog_schema);
 export default ActivityLog;

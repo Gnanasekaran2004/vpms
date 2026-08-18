@@ -70,3 +70,28 @@ export const getVisitorReport = async (req, res) => {
     return err(res, 'Server Error', 500);
   }
 };
+
+export const exportVisitorReportCSV = async (req, res) => {
+  try {
+    const visitors = await VisitorPass.find({}).populate('employeeToVisit', 'name');
+    
+    let csvString = "Name,Phone,Email,Status,Visit Date,Employee To Visit\n";
+    
+    visitors.forEach(v => {
+      const name = `"${v.visitorName}"`;
+      const phone = `"${v.visitorPhone}"`;
+      const email = `"${v.visitorEmail}"`;
+      const status = `"${v.status}"`;
+      const date = `"${new Date(v.visitDate).toLocaleDateString()}"`;
+      const employee = `"${v.employeeToVisit?.name || 'N/A'}"`;
+      
+      csvString += `${name},${phone},${email},${status},${date},${employee}\n`;
+    });
+
+    res.header('Content-Type', 'text/csv');
+    res.attachment('Visitor_Report.csv');
+    return res.send(csvString);
+  } catch (caughtError) {
+    return err(res, 'Server Error', 500);
+  }
+};

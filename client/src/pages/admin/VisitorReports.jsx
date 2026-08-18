@@ -30,6 +30,21 @@ const VisitorReports = () => {
     fetchReport()
   }, [])
 
+  const exportCSV = async () => {
+    try {
+      const res = await axiosInstance.get('/reports/export', { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([res.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'Visitor_Report.csv')
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode.removeChild(link)
+    } catch (e) {
+      alert('Error exporting CSV')
+    }
+  }
+
   return (
     <div className="animate-fade-in">
       <div className="page-header">
@@ -58,9 +73,14 @@ const VisitorReports = () => {
             </div>
           )}
 
-          <button className="primary" onClick={fetchReport} disabled={loading} style={{ marginLeft: 'auto' }}>
-            Generate Report
-          </button>
+          <div style={{ marginLeft: 'auto', display: 'flex', gap: '1rem' }}>
+            <button className="primary" onClick={fetchReport} disabled={loading}>
+              Generate Report
+            </button>
+            <button className="secondary" onClick={exportCSV} disabled={loading}>
+              Export CSV
+            </button>
+          </div>
         </div>
       </div>
 

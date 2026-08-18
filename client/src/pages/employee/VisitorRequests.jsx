@@ -10,6 +10,8 @@ const VisitorRequests = () => {
   const [actionId, setActionId] = useState(null)
   const [remarks, setRemarks] = useState('')
 
+  const [selectedIds, setSelectedIds] = useState([])
+
   const getVisitorsData = async (shouldShowLoader = true) => {
     if (shouldShowLoader) {
       setLoading(true)
@@ -21,6 +23,7 @@ const VisitorRequests = () => {
       }
       const visitorsRes = await axiosInstance.get(endpoint)
       setVisitors(visitorsRes.data.data || [])
+      setSelectedIds([]) // reset selections
     } catch (e) {
       console.log('error getting visitors', e)
       alert('Error fetching visitor requests')
@@ -53,11 +56,37 @@ const VisitorRequests = () => {
     }
   }
 
+  const handleBulkApprove = async () => {
+    if (selectedIds.length === 0) return
+    try {
+      setLoading(true)
+      const res = await axiosInstance.patch('/visitors/bulk-approve', { visitorIds: selectedIds })
+      alert(res.data.message || 'Bulk approve successful')
+      getVisitorsData(true)
+    } catch (e) {
+      alert('Error during bulk approve')
+      setLoading(false)
+    }
+  }
+
+  const toggleSelection = (id) => {
+    if (selectedIds.includes(id)) {
+      setSelectedIds(selectedIds.filter(selId => selId !== id))
+    } else {
+      setSelectedIds([...selectedIds, id])
+    }
+  }
+
   return (
     <div className="animate-fade-in">
       <div className="page-header">
         <h2>Visitor Requests</h2>
         <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+          {selectedIds.length > 0 && (
+             <button onClick={handleBulkApprove} className="success">
+               Bulk Approve ({selectedIds.length})
+             </button>
+          )}
           <label style={{ margin: 0 }}>Filter by Status:</label>
           <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)}>
             <option value="">All</option>
@@ -78,6 +107,13 @@ const VisitorRequests = () => {
           <table>
             <thead>
               <tr>
+                <th><input type="checkbox" onChange={(e) => {
+                  if (e.target.checked) {
+                    setSelectedIds(visitors.filter(v => v.status === 'Pending').map(v => v._id))
+                  } else {
+                    setSelectedIds([])
+                  }
+                }} /></th>
                 <th>Visitor Name</th>
                 <th>Phone</th>
                 <th>Visit Date</th>
@@ -91,6 +127,11 @@ const VisitorRequests = () => {
             <tbody>
               {visitors.map(v => (
                 <tr key={v._id}>
+                  <td>
+                    {v.status === 'Pending' && (
+                      <input type="checkbox" checked={selectedIds.includes(v._id)} onChange={() => toggleSelection(v._id)} />
+                    )}
+                  </td>
                   <td><strong>{v.visitorName}</strong></td>
                   <td style={{ color: 'var(--text-secondary)' }}>{v.visitorPhone}</td>
                   <td>{new Date(v.visitDate).toLocaleDateString()}</td>

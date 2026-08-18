@@ -2,16 +2,14 @@ import VisitorPass from '../models/VisitorPass.js';
 import ActivityLog from '../models/ActivityLog.js';
 import logActivity from '../utils/activityLogger.js';
 import { ok, err } from '../utils/apiResponse.js';
-
+import { sendStatusEmail } from '../utils/emailService.js';
 const handleErrorValidation = (res, theError) => {
   if (theError.name === 'ValidationError') {
     const errorStrings = Object.values(theError.errors).map(singleError => singleError.message);
-    const joinedErrors = errorStrings.join('. ');
-    return err(res, joinedErrors, 400);
+    return err(res, 'Validation Error', 400, errorStrings);
   }
   return err(res, 'Server Error', 500);
 };
-
 export const registerVisitor = async (req, res) => {
   try {
     const visitorNameInput = req.body.visitorName;
@@ -20,13 +18,12 @@ export const registerVisitor = async (req, res) => {
     const employeeToVisitInput = req.body.employeeToVisit;
     const visitDateInput = req.body.visitDate;
     const expectedArrivalTimeInput = req.body.expectedArrivalTime;
-    const purposeOfVisitInput = req.body.purposeOfVisit;
-
-    if (!visitorNameInput || !visitorPhoneInput || !visitorEmailInput || !employeeToVisitInput || !visitDateInput || !expectedArrivalTimeInput || !purposeOfVisitInput) {
-      return err(res, 'Missing required fields', 400);
-    }
-
+    const purposeOfVisitInput = req.body.purposeOfVisit; 
     const visitDateObject = new Date(visitDateInput);
+
+    // if (!visitorNameInput || !visitorPhoneInput || !visitorEmailInput || !employeeToVisitInput || !visitDateInput || !expectedArrivalTimeInput || !purposeOfVisitInput) {
+    //   return err(res, 'Missing required fields', 400);
+    // }
     const visitDayOnly = new Date(visitDateObject.getFullYear(), visitDateObject.getMonth(), visitDateObject.getDate());
 
     const currentTime = new Date();
@@ -51,7 +48,7 @@ export const registerVisitor = async (req, res) => {
     if (currentActiveVisitorPass) {
       return err(res, 'Visitor already has an active visit', 400);
     }
-
+    
     const endOfVisitDay = new Date(visitDayOnly);
     endOfVisitDay.setHours(23, 59, 59, 999);
 
@@ -102,7 +99,8 @@ export const getAllVisitors = async (req, res) => {
     const searchDate = req.query.date;
     const searchStatus = req.query.status;
     const generalSearch = req.query.search;
-    
+    const searchStartDate = req.query.startDate;
+    const searchEndDate = req.query.endDate;
     let builtQuery = {};
 
     if (searchStatus) {
@@ -115,12 +113,14 @@ export const getAllVisitors = async (req, res) => {
       builtQuery.visitorName = { $regex: searchVisitorName, $options: 'i' };
     }
 
-    if (searchDate) {
-      const parsedSearchDate = new Date(searchDate);
-      const startOfSearchDay = new Date(parsedSearchDate.getFullYear(), parsedSearchDate.getMonth(), parsedSearchDate.getDate());
-      const endOfSearchDay = new Date(startOfSearchDay);
-      endOfSearchDay.setHours(23, 59, 59, 999);
-      builtQuery.visitDate = { $gte: startOfSearchDay, $lte: endOfSearchDay };
+     if (searchStartDate && searchEndDate) {
+      const startOfSearch = new Date(searchStartDate);
+      startOfSearch.setHours(0, 0, 0, 0);
+      
+      const endOfSearch = new Date(searchEndDate);
+      endOfSearch.setHours(23, 59, 59, 999);
+      
+      builtQuery.visitDate = { $gte: startOfSearch, $lte: endOfSearch };
     }
 
     if (generalSearch) {
@@ -189,6 +189,7 @@ export const approveVisitor = async (req, res) => {
     }
 
     const completelySavedPass = await passToApprove.save();
+    await sendStatusEmail(passToApprove.visitorEmail, passToApprove.visitorName, 'Approved');
     await logActivity({ visitorId: completelySavedPass._id, actionPerformed: 'Approved', performedBy: req.user._id, notes: req.body.remarks });
 
     return ok(res, completelySavedPass);
@@ -316,5 +317,32 @@ export const getVisitorLogs = async (req, res) => {
     return ok(res, foundLogsForVisitor);
   } catch (caughtError) {
     return handleErrorValidation(res, caughtError);
+  }
+};
+
+export const bulkApproveVisitors = async (req, res) => {
+  try {
+    const visitorIds = req.body.visitorIds;
+    if (!visitorIds || !Array.isArray(visitorIds)) {
+      return err(res, 'Please provide an array of visitor IDs', 400);
+    }
+
+    let successCount = 0;
+    let failedCount = 0;
+    for (let i = 0; i < visitorIds.length; i++) {
+      const pass = await VisitorPass.findById(visitorIds[i]);
+      if (pass && pass.status === 'Pending' && pass.employeeToVisit.toString() === req.user._id.toString()) {
+        pass.status = 'Approved';
+        await pass.save();
+        await logActivity({ visitorId: pass._id, actionPerformed: 'Approved', performedBy: req.user._id });
+        successCount++;
+      } else {
+        failedCount++;
+      }
+    }
+
+    return ok(res, { successCount, failedCount }, `Bulk operation complete. ${successCount} approved.`);
+  } catch (error) {
+    return err(res, 'Server Error', 500);
   }
 };

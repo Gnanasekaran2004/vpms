@@ -1,7 +1,6 @@
 import VisitorPass from '../models/VisitorPass.js';
 import User from '../models/User.js';
 import { ok, err } from '../utils/apiResponse.js';
-
 export const getDashboardStats = async (req, res) => {
   try {
     const CurrentDate = new Date();
@@ -118,6 +117,28 @@ export const getDashboardStats = async (req, res) => {
     
     return ok(res, finaldashboard_statstoreturn);
   } catch (caughtError) {
+    return err(res, 'Server Error', 500);
+  }
+};
+
+export const getChartData = async (req, res) => {
+  try {
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+
+    const chartData = await VisitorPass.aggregate([
+      { $match: { createdAt: { $gte: sevenDaysAgo } } },
+      { 
+        $group: { 
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, 
+          totalVisitors: { $sum: 1 } 
+        } 
+      },
+      { $sort: { _id: 1 } }
+    ]);
+
+    return ok(res, chartData);
+  } catch (error) {
     return err(res, 'Server Error', 500);
   }
 };
