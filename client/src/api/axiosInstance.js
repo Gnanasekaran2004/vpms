@@ -7,7 +7,7 @@ let myAxiosThing = axios.create({
 
 myAxiosThing.interceptors.request.use(
   function(requestObj) {
-    let savedTokenVal = sessionStorage.getItem('vpms_token')
+    let savedTokenVal = localStorage.getItem('vpms_token')
     if (savedTokenVal != null) {
       requestObj.headers.Authorization = 'Bearer ' + savedTokenVal
     }
@@ -25,8 +25,8 @@ myAxiosThing.interceptors.response.use(
   function(badErrorObj) {
     let isUnauthorized = badErrorObj.response && badErrorObj.response.status === 401
     if (isUnauthorized) {
-      sessionStorage.removeItem('vpms_token')
-      sessionStorage.removeItem('vpms_user')
+      localStorage.removeItem('vpms_token')
+      localStorage.removeItem('vpms_user')
       window.location.href = '/login'
     }
     return Promise.reject(badErrorObj)

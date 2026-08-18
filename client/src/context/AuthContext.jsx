@@ -41,8 +41,8 @@ export const AuthProvider = ({ children }) => {
   })
 
   useEffect(() => {
-    let tokenStr = sessionStorage.getItem('vpms_token')
-    let userStr = sessionStorage.getItem('vpms_user')
+    let tokenStr = localStorage.getItem('vpms_token')
+    let userStr = localStorage.getItem('vpms_user')
 
     if (tokenStr !== null && userStr !== null) {
       try {
@@ -57,14 +57,14 @@ export const AuthProvider = ({ children }) => {
   }, [])
 
   let doLoginFunc = (userProfileObj, userTokenStr) => {
-    sessionStorage.setItem('vpms_token', userTokenStr)
-    sessionStorage.setItem('vpms_user', JSON.stringify(userProfileObj))
+    localStorage.setItem('vpms_token', userTokenStr)
+    localStorage.setItem('vpms_user', JSON.stringify(userProfileObj))
     dispatchMyAction({ type: 'LOGIN', payload: { user: userProfileObj, token: userTokenStr } })
   }
 
   let doLogoutFunc = () => {
-    sessionStorage.removeItem('vpms_token')
-    sessionStorage.removeItem('vpms_user')
+    localStorage.removeItem('vpms_token')
+    localStorage.removeItem('vpms_user')
     dispatchMyAction({ type: 'LOGOUT' })
   }
 
