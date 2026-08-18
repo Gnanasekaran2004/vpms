@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react'
 import axiosInstance from '../../api/axiosInstance'
 import LoadingSpinner from '../../components/shared/LoadingSpinner'
 import StatusBadge from '../../components/shared/StatusBadge'
+import DownloadPassButton from '../../components/DownloadPassButton'
+import { io } from 'socket.io-client'
 
 const VisitorHistory = () => {
   const [visitors, setVisitors] = useState([])
@@ -43,6 +45,14 @@ const VisitorHistory = () => {
 
   useEffect(() => {
     loadVisitors(true)
+  }, [filters])
+
+  useEffect(() => {
+    const socket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000')
+    socket.on('visitorUpdated', () => {
+      loadVisitors(false)
+    })
+    return () => socket.disconnect()
   }, [filters])
 
   const handleFilterChange = (e) => {
@@ -140,6 +150,7 @@ const VisitorHistory = () => {
                     <td><StatusBadge status={v.status} /></td>
                     <td style={{ display: 'flex', gap: '0.5rem' }}>
                       <button onClick={() => toggleExpand(v._id)} className="secondary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>View</button>
+                      <DownloadPassButton visitor={v} />
                       {v.status === 'Approved' && <button onClick={() => handleAction(v._id, 'check-in')} className="success" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Check In</button>}
                       {v.status === 'CheckedIn' && <button onClick={() => handleAction(v._id, 'check-out')} className="primary" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Check Out</button>}
                       {(v.status === 'Pending' || v.status === 'Approved') && <button onClick={() => handleAction(v._id, 'cancel')} className="danger" style={{ padding: '0.4rem 0.8rem', fontSize: '0.8rem' }}>Cancel</button>}

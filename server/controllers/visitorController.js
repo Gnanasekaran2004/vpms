@@ -3,6 +3,8 @@ import ActivityLog from '../models/ActivityLog.js';
 import logActivity from '../utils/activityLogger.js';
 import { ok, err } from '../utils/apiResponse.js';
 import { sendStatusEmail } from '../utils/emailService.js';
+import { io } from '../server.js';
+
 const handleErrorValidation = (res, theError) => {
   if (theError.name === 'ValidationError') {
     const errorStrings = Object.values(theError.errors).map(singleError => singleError.message);
@@ -10,6 +12,7 @@ const handleErrorValidation = (res, theError) => {
   }
   return err(res, 'Server Error', 500);
 };
+
 export const registerVisitor = async (req, res) => {
   try {
     const visitorNameInput = req.body.visitorName;
@@ -21,9 +24,6 @@ export const registerVisitor = async (req, res) => {
     const purposeOfVisitInput = req.body.purposeOfVisit; 
     const visitDateObject = new Date(visitDateInput);
 
-    // if (!visitorNameInput || !visitorPhoneInput || !visitorEmailInput || !employeeToVisitInput || !visitDateInput || !expectedArrivalTimeInput || !purposeOfVisitInput) {
-    //   return err(res, 'Missing required fields', 400);
-    // }
     const visitDayOnly = new Date(visitDateObject.getFullYear(), visitDateObject.getMonth(), visitDateObject.getDate());
 
     const currentTime = new Date();
@@ -68,6 +68,11 @@ export const registerVisitor = async (req, res) => {
       return err(res, 'Employee already has 3 pending visitor requests', 400);
     }
 
+    const year = new Date().getFullYear();
+    const count = await VisitorPass.countDocuments();
+    const padded = String(count + 1).padStart(5, '0');
+    const passNumber = `VP-${year}-${padded}`;
+
     const newlyCreatedVisitorPass = await new VisitorPass({
       visitorName: visitorNameInput, 
       visitorPhone: visitorPhoneInput, 
@@ -77,10 +82,13 @@ export const registerVisitor = async (req, res) => {
       expectedArrivalTime: expectedArrivalTimeInput, 
       purposeOfVisit: purposeOfVisitInput,
       status: 'Pending', 
+      passNumber: passNumber,
       createdBy: req.user._id
     }).save();
-
+    
     await logActivity({ visitorId: newlyCreatedVisitorPass._id, actionPerformed: 'Created', performedBy: req.user._id });
+
+    io.emit('visitorUpdated');
 
     const fullyPopulatedPass = await VisitorPass.findById(newlyCreatedVisitorPass._id)
       .populate('employeeToVisit', 'name email department')
@@ -189,8 +197,10 @@ export const approveVisitor = async (req, res) => {
     }
 
     const completelySavedPass = await passToApprove.save();
-    await sendStatusEmail(passToApprove.visitorEmail, passToApprove.visitorName, 'Approved');
+    await sendStatusEmail(passToApprove.visitorEmail, passToApprove.visitorName, 'Approved', completelySavedPass);
     await logActivity({ visitorId: completelySavedPass._id, actionPerformed: 'Approved', performedBy: req.user._id, notes: req.body.remarks });
+    
+    io.emit('visitorUpdated');
 
     return ok(res, completelySavedPass);
   } catch (caughtError) {
@@ -218,6 +228,8 @@ export const rejectVisitor = async (req, res) => {
 
     const completelySavedPass = await passToReject.save();
     await logActivity({ visitorId: completelySavedPass._id, actionPerformed: 'Rejected', performedBy: req.user._id, notes: req.body.remarks });
+
+    io.emit('visitorUpdated');
 
     return ok(res, completelySavedPass);
   } catch (caughtError) {
@@ -249,6 +261,8 @@ export const checkInVisitor = async (req, res) => {
     const completelySavedPass = await passToCheckIn.save();
     await logActivity({ visitorId: completelySavedPass._id, actionPerformed: 'Checked In', performedBy: req.user._id });
 
+    io.emit('visitorUpdated');
+
     return ok(res, completelySavedPass);
   } catch (caughtError) {
     return handleErrorValidation(res, caughtError);
@@ -278,6 +292,8 @@ export const checkOutVisitor = async (req, res) => {
     const completelySavedPass = await passToCheckOut.save();
     await logActivity({ visitorId: completelySavedPass._id, actionPerformed: 'Checked Out', performedBy: req.user._id });
 
+    io.emit('visitorUpdated');
+
     return ok(res, completelySavedPass);
   } catch (caughtError) {
     return handleErrorValidation(res, caughtError);
@@ -300,6 +316,8 @@ export const cancelVisit = async (req, res) => {
 
     const completelySavedPass = await passToCancel.save();
     await logActivity({ visitorId: completelySavedPass._id, actionPerformed: 'Cancelled', performedBy: req.user._id });
+
+    io.emit('visitorUpdated');
 
     return ok(res, completelySavedPass);
   } catch (caughtError) {
@@ -334,11 +352,16 @@ export const bulkApproveVisitors = async (req, res) => {
       if (pass && pass.status === 'Pending' && pass.employeeToVisit.toString() === req.user._id.toString()) {
         pass.status = 'Approved';
         await pass.save();
+        await sendStatusEmail(pass.visitorEmail, pass.visitorName, 'Approved', pass);
         await logActivity({ visitorId: pass._id, actionPerformed: 'Approved', performedBy: req.user._id });
         successCount++;
       } else {
         failedCount++;
       }
+    }
+
+    if (successCount > 0) {
+      io.emit('visitorUpdated');
     }
 
     return ok(res, { successCount, failedCount }, `Bulk operation complete. ${successCount} approved.`);

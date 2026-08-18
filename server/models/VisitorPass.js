@@ -19,7 +19,8 @@ const visitorPassSchema = new mongoose.Schema({
   remarks: { type: String, trim: true },
   checkInTime: { type: Date },
   checkOutTime: { type: Date },
-  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  passNumber: { type: String, unique: true, sparse: true }
 }, { timestamps: true });
 
 visitorPassSchema.index({ employeeToVisit: 1, status: 1 });

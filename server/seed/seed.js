@@ -10,7 +10,7 @@ dotenv.config();
 
 export const doSeed = async () => {
   try {
-    // await connectDB(); // Removed so we can call it from server.js after connection
+    await connectDB();
     
     await User.deleteMany({});
     await VisitorPass.deleteMany({});
@@ -90,11 +90,14 @@ export const doSeed = async () => {
     }
     
     console.log('Seed complete!');
-    
+    process.exit(0);
   } catch (e) {
     console.error(e);
-    
+    process.exit(1);
   }
 };
 
-// doSeed();
+// If this file is run directly (e.g. node seed.js), execute doSeed()
+if (process.argv[1] && process.argv[1].endsWith('seed.js')) {
+  doSeed();
+}

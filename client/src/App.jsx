@@ -18,6 +18,7 @@ const RegisterVisitor = lazy(() => import('./pages/receptionist/RegisterVisitor'
 const VisitorHistory = lazy(() => import('./pages/receptionist/VisitorHistory'))
 const EmployeeDashboard = lazy(() => import('./pages/employee/EmployeeDashboard'))
 const VisitorRequests = lazy(() => import('./pages/employee/VisitorRequests'))
+const VerifyPass = lazy(() => import('./pages/VerifyPass'))
 
 const MainLayout = () => {
   return (
@@ -43,6 +44,7 @@ const App = () => {
           <Routes>
             <Route path="/" element={<Navigate to="/login" replace />} />
             <Route path="/login" element={<Login />} />
+            <Route path="/verify/:passNumber" element={<VerifyPass />} />
 
             <Route element={<MainLayout />}>
               <Route element={<ProtectedRoute allowedRoles={['Administrator']} />}>

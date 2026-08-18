@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import axiosInstance from '../../api/axiosInstance'
 import LoadingSpinner from '../../components/shared/LoadingSpinner'
 import StatusBadge from '../../components/shared/StatusBadge'
+import { io } from 'socket.io-client'
 
 const VisitorRequests = () => {
   const [visitors, setVisitors] = useState([])
@@ -38,6 +39,22 @@ const VisitorRequests = () => {
   useEffect(() => {
     getVisitorsData(true)
   }, [statusFilter])
+
+  useEffect(() => {
+    // Connect to the backend WebSocket server
+    const socket = io(import.meta.env.VITE_API_URL?.replace('/api', '') || 'http://localhost:5000')
+    
+    // Listen for the 'visitorUpdated' event
+    socket.on('visitorUpdated', () => {
+      console.log('A visitor was updated! Refetching data...')
+      getVisitorsData(false) 
+    })
+
+    // Cleanup connection when component unmounts
+    return () => {
+      socket.disconnect()
+    }
+  }, [statusFilter]) // Keep statusFilter dependency so it fetches with the correct filter
 
   const doAction = async (id, actionType) => {
     if (actionType === 'reject' && remarks.trim() === '') {

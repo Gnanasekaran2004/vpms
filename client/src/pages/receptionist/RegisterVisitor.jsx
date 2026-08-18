@@ -63,8 +63,9 @@ const RegisterVisitor = () => {
     if (!validate()) return
 
     try {
-      await axiosInstance.post('/visitors', formData)
-      setSuccess('Visitor registered successfully')
+      const response = await axiosInstance.post('/visitors', formData)
+      const passNumber = response.data.data?.passNumber
+      setSuccess(`Visitor registered successfully! Pass Number: ${passNumber}`)
       setFormData({
         visitorName: '',
         visitorPhone: '',
