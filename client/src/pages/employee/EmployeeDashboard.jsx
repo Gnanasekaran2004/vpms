@@ -2,14 +2,13 @@ import React, { useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import axiosInstance from '../../api/axiosInstance'
 import LoadingSpinner from '../../components/shared/LoadingSpinner'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { PieChart, Pie, Cell, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 const EmployeeDashboard = () => {
   const [stats, setStats] = useState(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    // get employee stats from api
     const loadMyStats = async () => {
       try {
         const myStatsRes = await axiosInstance.get('/dashboard/stats')
@@ -27,11 +26,10 @@ const EmployeeDashboard = () => {
   if (loading) return <LoadingSpinner />
   if (!stats) return null
 
-  const chartData = [
-    { name: 'Pending', value: stats.pendingRequests || 0 },
-    { name: 'Approved', value: stats.approvedRequests || 0 },
-    { name: 'Rejected', value: stats.rejectedRequests || 0 },
-    { name: 'Total Visitors Today', value: stats.todaysVisitors || 0 }
+  const pieData = [
+    { name: 'Pending', value: stats.pendingRequests || 0, color: '#f59e0b' },
+    { name: 'Approved', value: stats.approvedRequests || 0, color: '#10b981' },
+    { name: 'Rejected', value: stats.rejectedRequests || 0, color: '#ef4444' }
   ];
 
   return (
@@ -43,17 +41,21 @@ const EmployeeDashboard = () => {
         </Link>
       </div>
       
-      <div className="glass-card animate-fade-in" style={{ animationDelay: '0.1s', marginTop: '2rem', padding: '2rem', height: '400px' }}>
-        <h3 style={{ marginBottom: '1.5rem', color: 'var(--accent-primary)', textAlign: 'center' }}>My Visitor Statistics</h3>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="name" stroke="var(--text-secondary)" />
-            <YAxis stroke="var(--text-secondary)" allowDecimals={false} />
-            <Tooltip cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }} contentStyle={{ backgroundColor: '#ffffff', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'var(--text-primary)', boxShadow: 'var(--shadow-md)' }} />
-            <Bar dataKey="value" fill="var(--accent-primary)" radius={[4, 4, 0, 0]} barSize={50} />
-          </BarChart>
-        </ResponsiveContainer>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem', marginTop: '2rem' }}>
+        <div className="glass-card animate-fade-in" style={{ animationDelay: '0.1s', padding: '1.5rem', height: '350px' }}>
+          <h3 style={{ marginBottom: '1.5rem', color: 'var(--accent-primary)', textAlign: 'center', fontSize: '1.1rem' }}>My Visitor Statistics</h3>
+          <ResponsiveContainer width="100%" height="100%">
+            <PieChart margin={{ top: -20, right: 0, left: 0, bottom: 0 }}>
+              <Pie data={pieData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={5} dataKey="value">
+                {pieData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
+              <Legend verticalAlign="bottom" height={36} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   )

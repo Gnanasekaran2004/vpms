@@ -48,17 +48,19 @@ const ReceptionistDashboard = () => {
         </div>
       </div>
 
-      <div className="glass-card animate-fade-in" style={{ animationDelay: '0.1s', marginTop: '2rem', padding: '2rem', height: '400px' }}>
-        <h3 style={{ marginBottom: '1.5rem', color: 'var(--accent-primary)', textAlign: 'center' }}>Visitor Activity Overview</h3>
-        <ResponsiveContainer width="100%" height="100%">
-          <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
-            <XAxis dataKey="name" stroke="var(--text-secondary)" />
-            <YAxis stroke="var(--text-secondary)" allowDecimals={false} />
-            <Tooltip cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }} contentStyle={{ backgroundColor: '#ffffff', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'var(--text-primary)', boxShadow: 'var(--shadow-md)' }} />
-            <Bar dataKey="value" fill="var(--accent-primary)" radius={[4, 4, 0, 0]} barSize={50} />
-          </BarChart>
-        </ResponsiveContainer>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginTop: '2rem' }}>
+        <div className="glass-card animate-fade-in" style={{ animationDelay: '0.1s', padding: '1.5rem', height: '350px' }}>
+          <h3 style={{ marginBottom: '1.5rem', color: 'var(--accent-primary)', textAlign: 'center' }}>Visitor Activity Overview</h3>
+          <ResponsiveContainer width="100%" height="100%">
+            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
+              <XAxis dataKey="name" stroke="var(--text-secondary)" tick={{fontSize: 12}} />
+              <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{fontSize: 12}} />
+              <Tooltip cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
+              <Bar dataKey="value" fill="var(--accent-primary)" radius={[4, 4, 0, 0]} barSize={40} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
     </div>
   )

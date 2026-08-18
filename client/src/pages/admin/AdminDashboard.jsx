@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import axiosInstance from '../../api/axiosInstance'
 import LoadingSpinner from '../../components/shared/LoadingSpinner'
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
+import { BarChart, Bar, AreaChart, Area, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend } from 'recharts'
 
 const AdminDashboard = () => {
   const [stats, setStats] = useState(null)
@@ -32,13 +32,16 @@ const AdminDashboard = () => {
   if (error) return <div style={{ color: 'red' }}>{error}</div>
   if (!stats) return null
 
-  const chartData = [
-    { name: 'Pending', value: stats.pendingRequests || 0 },
-    { name: "Today's Visitors", value: stats.todaysVisitors || 0 },
-    { name: 'Inside Now', value: stats.visitorsInsideNow || 0 },
+  const barData = [
     { name: 'Employees', value: stats.totalEmployees || 0 },
-    { name: 'Scheduled', value: stats.scheduledVisitors || 0 },
+    { name: "Today's Visitors", value: stats.todaysVisitors || 0 },
     { name: 'Total Visitors', value: stats.totalVisitors || 0 }
+  ];
+
+  const pieData = [
+    { name: 'Pending', value: stats.pendingRequests || 0, color: '#f59e0b' },
+    { name: 'Inside Now', value: stats.visitorsInsideNow || 0, color: '#10b981' },
+    { name: 'Scheduled', value: stats.scheduledVisitors || 0, color: '#3b82f6' }
   ];
 
   return (
@@ -47,30 +50,55 @@ const AdminDashboard = () => {
         <h2>Admin Dashboard</h2>
       </div>
       
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem', marginTop: '2rem' }}>
-        <div className="glass-card animate-fade-in" style={{ animationDelay: '0.1s', padding: '2rem', height: '400px' }}>
-          <h3 style={{ marginBottom: '1.5rem', color: 'var(--accent-primary)', textAlign: 'center' }}>Today's Overview</h3>
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(350px, 1fr))', gap: '2rem', marginTop: '2rem' }}>
+        
+        {/* 1. Bar Chart */}
+        <div className="glass-card animate-fade-in" style={{ padding: '1.5rem', height: '350px' }}>
+          <h3 style={{ marginBottom: '1rem', color: 'var(--accent-primary)', textAlign: 'center', fontSize: '1.1rem' }}>General Overview</h3>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartData} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <BarChart data={barData} margin={{ top: 10, right: 10, left: -20, bottom: 20 }}>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
               <XAxis dataKey="name" stroke="var(--text-secondary)" tick={{fontSize: 12}} />
-              <YAxis stroke="var(--text-secondary)" allowDecimals={false} />
-              <Tooltip cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }} contentStyle={{ backgroundColor: '#ffffff', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'var(--text-primary)' }} />
-              <Bar dataKey="value" fill="var(--accent-primary)" radius={[4, 4, 0, 0]} />
+              <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{fontSize: 12}} />
+              <Tooltip cursor={{ fill: 'rgba(255, 255, 255, 0.05)' }} contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
+              <Bar dataKey="value" fill="#8b5cf6" radius={[4, 4, 0, 0]} barSize={40} />
             </BarChart>
           </ResponsiveContainer>
         </div>
 
-        <div className="glass-card animate-fade-in" style={{ animationDelay: '0.2s', padding: '2rem', height: '400px' }}>
-          <h3 style={{ marginBottom: '1.5rem', color: '#10b981', textAlign: 'center' }}>7-Day Visitor Trend</h3>
+        {/* 2. Donut Chart */}
+        <div className="glass-card animate-fade-in" style={{ animationDelay: '0.1s', padding: '1.5rem', height: '350px' }}>
+          <h3 style={{ marginBottom: '1rem', color: '#3b82f6', textAlign: 'center', fontSize: '1.1rem' }}>Active Pass Status</h3>
           <ResponsiveContainer width="100%" height="100%">
-            <BarChart data={chartHistory} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" />
+            <PieChart margin={{ top: -20, right: 0, left: 0, bottom: 0 }}>
+              <Pie data={pieData} cx="50%" cy="50%" innerRadius={60} outerRadius={90} paddingAngle={5} dataKey="value">
+                {pieData.map((entry, index) => (
+                  <Cell key={`cell-${index}`} fill={entry.color} />
+                ))}
+              </Pie>
+              <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
+              <Legend verticalAlign="bottom" height={36} />
+            </PieChart>
+          </ResponsiveContainer>
+        </div>
+
+        {/* 3. Area Chart */}
+        <div className="glass-card animate-fade-in" style={{ animationDelay: '0.2s', padding: '1.5rem', height: '350px', gridColumn: '1 / -1' }}>
+          <h3 style={{ marginBottom: '1rem', color: '#10b981', textAlign: 'center', fontSize: '1.1rem' }}>7-Day Visitor Trend</h3>
+          <ResponsiveContainer width="100%" height="100%">
+            <AreaChart data={chartHistory} margin={{ top: 10, right: 20, left: -20, bottom: 20 }}>
+              <defs>
+                <linearGradient id="colorVis" x1="0" y1="0" x2="0" y2="1">
+                  <stop offset="5%" stopColor="#10b981" stopOpacity={0.8}/>
+                  <stop offset="95%" stopColor="#10b981" stopOpacity={0}/>
+                </linearGradient>
+              </defs>
+              <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.1)" />
               <XAxis dataKey="_id" stroke="var(--text-secondary)" tick={{fontSize: 12}} />
-              <YAxis stroke="var(--text-secondary)" allowDecimals={false} />
-              <Tooltip cursor={{ fill: 'rgba(0, 0, 0, 0.05)' }} contentStyle={{ backgroundColor: '#ffffff', border: '1px solid var(--glass-border)', borderRadius: '8px', color: 'var(--text-primary)' }} />
-              <Bar dataKey="totalVisitors" fill="#10b981" radius={[4, 4, 0, 0]} />
-            </BarChart>
+              <YAxis stroke="var(--text-secondary)" allowDecimals={false} tick={{fontSize: 12}} />
+              <Tooltip contentStyle={{ backgroundColor: '#1e293b', border: 'none', borderRadius: '8px', color: '#fff' }} />
+              <Area type="monotone" dataKey="totalVisitors" stroke="#10b981" fillOpacity={1} fill="url(#colorVis)" />
+            </AreaChart>
           </ResponsiveContainer>
         </div>
       </div>
