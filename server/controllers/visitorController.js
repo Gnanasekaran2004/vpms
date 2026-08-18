@@ -197,7 +197,10 @@ export const approveVisitor = async (req, res) => {
     }
 
     const completelySavedPass = await passToApprove.save();
-    await sendStatusEmail(passToApprove.visitorEmail, passToApprove.visitorName, 'Approved', completelySavedPass);
+    
+    // Fire and forget email so it doesn't block the UI response
+    sendStatusEmail(passToApprove.visitorEmail, passToApprove.visitorName, 'Approved', completelySavedPass);
+    
     await logActivity({ visitorId: completelySavedPass._id, actionPerformed: 'Approved', performedBy: req.user._id, notes: req.body.remarks });
     
     io.emit('visitorUpdated');
@@ -352,7 +355,10 @@ export const bulkApproveVisitors = async (req, res) => {
       if (pass && pass.status === 'Pending' && pass.employeeToVisit.toString() === req.user._id.toString()) {
         pass.status = 'Approved';
         await pass.save();
-        await sendStatusEmail(pass.visitorEmail, pass.visitorName, 'Approved', pass);
+        
+        // Fire and forget email
+        sendStatusEmail(pass.visitorEmail, pass.visitorName, 'Approved', pass);
+        
         await logActivity({ visitorId: pass._id, actionPerformed: 'Approved', performedBy: req.user._id });
         successCount++;
       } else {
