@@ -6,11 +6,12 @@ import { sendStatusEmail } from '../utils/emailService.js';
 import { io } from '../server.js';
 
 const handleErrorValidation = (res, theError) => {
+  console.error("SERVER ERROR:", theError);
   if (theError.name === 'ValidationError') {
     const errorStrings = Object.values(theError.errors).map(singleError => singleError.message);
     return err(res, 'Validation Error', 400, errorStrings);
   }
-  return err(res, 'Server Error', 500);
+  return err(res, 'Server Error: ' + (theError.message || theError.toString()), 500);
 };
 
 export const registerVisitor = async (req, res) => {
@@ -69,8 +70,15 @@ export const registerVisitor = async (req, res) => {
     }
 
     const year = new Date().getFullYear();
-    const count = await VisitorPass.countDocuments();
-    const padded = String(count + 1).padStart(5, '0');
+    const lastPass = await VisitorPass.findOne({ passNumber: { $regex: `^VP-${year}-` } }).sort({ createdAt: -1 });
+    let highestCount = 0;
+    if (lastPass && lastPass.passNumber) {
+      const parts = lastPass.passNumber.split('-');
+      if (parts.length === 3) {
+        highestCount = parseInt(parts[2], 10);
+      }
+    }
+    const padded = String(highestCount + 1).padStart(5, '0');
     const passNumber = `VP-${year}-${padded}`;
 
     const newlyCreatedVisitorPass = await new VisitorPass({
