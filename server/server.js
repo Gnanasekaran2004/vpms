@@ -40,9 +40,11 @@ app.use((error, req, res, next) => {
 });
 
 const PORT = process.env.PORT || 5000;
+import { doSeed } from './seed/seed.js';
 
 const start = async () => {
   await connectDB();
+  await doSeed();
   app.listen(PORT, () => {
     console.log(`Server running on port ${PORT} in ${process.env.NODE_ENV} mode`);
   });

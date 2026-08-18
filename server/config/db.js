@@ -1,9 +1,13 @@
 import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 
 const connectDB = async () => {
   try {
-    const db = await mongoose.connect(process.env.MONGO_URI);
-    console.log('Connected to mongo: ' + db.connection.host);
+    console.log('Starting in-memory MongoDB server...');
+    const mongoServer = await MongoMemoryServer.create();
+    const uri = mongoServer.getUri();
+    const db = await mongoose.connect(uri);
+    console.log('Connected to local memory mongo: ' + db.connection.host);
   } catch (err) {
     console.log('db error', err);
     process.exit(1);

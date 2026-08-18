@@ -8,9 +8,9 @@ import ActivityLog from '../models/ActivityLog.js';
 
 dotenv.config();
 
-const doSeed = async () => {
+export const doSeed = async () => {
   try {
-    await connectDB();
+    // await connectDB(); // Removed so we can call it from server.js after connection
     
     await User.deleteMany({});
     await VisitorPass.deleteMany({});
@@ -90,11 +90,11 @@ const doSeed = async () => {
     }
     
     console.log('Seed complete!');
-    process.exit(0);
+    
   } catch (e) {
     console.error(e);
-    process.exit(1);
+    
   }
 };
 
-doSeed();
+// doSeed();
