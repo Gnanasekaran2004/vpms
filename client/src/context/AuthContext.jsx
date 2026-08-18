@@ -57,14 +57,14 @@ export const AuthProvider = ({ children }) => {
   }, [])
 
   let doLoginFunc = (userProfileObj, userTokenStr) => {
-    localStorage.setItem('vpms_token', userTokenStr)
-    localStorage.setItem('vpms_user', JSON.stringify(userProfileObj))
+    sessionStorage.setItem('vpms_token', userTokenStr)
+    sessionStorage.setItem('vpms_user', JSON.stringify(userProfileObj))
     dispatchMyAction({ type: 'LOGIN', payload: { user: userProfileObj, token: userTokenStr } })
   }
 
   let doLogoutFunc = () => {
-    localStorage.removeItem('vpms_token')
-    localStorage.removeItem('vpms_user')
+    sessionStorage.removeItem('vpms_token')
+    sessionStorage.removeItem('vpms_user')
     dispatchMyAction({ type: 'LOGOUT' })
   }
 
