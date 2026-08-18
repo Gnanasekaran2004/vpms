@@ -10,7 +10,20 @@ dotenv.config();
 
 export const doSeed = async () => {
   try {
-    await connectDB();
+    const isDirectRun = process.argv[1] && process.argv[1].endsWith('seed.js');
+    if (isDirectRun) {
+      await connectDB();
+    }
+    
+    // Only seed if database is empty!
+    const userCount = await User.countDocuments();
+    if (userCount > 0) {
+      console.log('Database already has users. Skipping automatic seed.');
+      if (isDirectRun) process.exit(0);
+      return;
+    }
+    
+    console.log('Database is empty. Seeding initial data...');
     
     await User.deleteMany({});
     await VisitorPass.deleteMany({});
@@ -90,10 +103,10 @@ export const doSeed = async () => {
     }
     
     console.log('Seed complete!');
-    process.exit(0);
+    if (isDirectRun) process.exit(0);
   } catch (e) {
     console.error(e);
-    process.exit(1);
+    if (process.argv[1] && process.argv[1].endsWith('seed.js')) process.exit(1);
   }
 };
 
